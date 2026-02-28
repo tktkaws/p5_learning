@@ -1,0 +1,117 @@
+---
+layout: ../../layouts/Layout.astro
+title: "キーボードお絵かき"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="keyboard-drawing" />
+
+<div class="article-content">
+
+## キーボードお絵かき
+
+マウスドラッグで描画し、キーボードで色やブラシを切り替えるお絵かきツールです。
+
+### 操作方法
+
+| キー | 操作 |
+|------|------|
+| `1`〜`7` | 色の切替（赤/橙/黄/緑/青/紫/黒） |
+| `↑` / `↓` | ブラシサイズの変更 |
+| `B` | ブラシ種類の切替（丸/四角/スプレー） |
+| `C` | キャンバスクリア |
+| マウスドラッグ | 描画 |
+
+## keyPressed イベント
+
+```js
+p.keyPressed = () => {
+  if (p.key >= "1" && p.key <= "7") {
+    brushColor = colors[parseInt(p.key) - 1];
+  }
+
+  if (p.keyCode === p.UP_ARROW) brushSize += 4;
+  if (p.keyCode === p.DOWN_ARROW) brushSize -= 4;
+
+  if (p.key === "b" || p.key === "B") {
+    // ブラシ切替
+  }
+};
+```
+
+### key と keyCode の違い
+
+| プロパティ | 値の例 | 用途 |
+|-----------|--------|------|
+| `p.key` | `"a"`, `"1"`, `"B"` | 文字キーの判定 |
+| `p.keyCode` | `p.UP_ARROW`, `p.ENTER` | 特殊キーの判定 |
+
+- 通常の文字は `p.key` で判定
+- 矢印キー・Enter・Shift などは `p.keyCode` と定数で比較
+
+## mouseIsPressed でドラッグ検出
+
+```js
+p.draw = () => {
+  if (p.mouseIsPressed) {
+    p.circle(p.mouseX, p.mouseY, brushSize);
+  }
+};
+```
+
+`mouseIsPressed` は**マウスボタンが押されている間ずっと `true`** です。`draw()` 内で使うことで、ドラッグ（押しながら移動）を検出できます。
+
+## 3種類のブラシ
+
+### 丸ブラシ（circle）
+
+```js
+p.circle(p.mouseX, p.mouseY, brushSize);
+```
+
+最もシンプル。`draw()` が毎フレーム呼ばれるので、マウスを動かすと円が連続して描かれます。
+
+### 四角ブラシ（square）
+
+```js
+p.rectMode(p.CENTER);
+p.rect(p.mouseX, p.mouseY, brushSize, brushSize);
+```
+
+`rectMode(CENTER)` を使うと、`rect()` の x, y が**中心**になります（デフォルトは左上隅）。
+
+### スプレーブラシ（spray）
+
+```js
+for (let i = 0; i < 10; i++) {
+  const ox = p.randomGaussian(0, brushSize / 2);
+  const oy = p.randomGaussian(0, brushSize / 2);
+  p.circle(p.mouseX + ox, p.mouseY + oy, 2);
+}
+```
+
+`randomGaussian(mean, sd)` は**正規分布**に従うランダム値を返します。中心付近に多く、端に少ない自然な散らばりになります。
+
+## 描画が残る仕組み
+
+通常のスケッチでは `background()` を毎フレーム呼んで画面をクリアしますが、このスケッチでは**呼ばない**ことで、描いた線がそのまま残ります。
+
+```js
+p.draw = () => {
+  // background() を呼ばない！
+  if (p.mouseIsPressed) {
+    p.circle(p.mouseX, p.mouseY, brushSize);
+  }
+  drawUI(); // UIだけ上に重ねて描く
+};
+```
+
+## 試してみよう
+
+- 新しい色を `colors` 配列に追加してみましょう
+- ブラシの透明度をマウスの速度で変えてみましょう（速いほど薄くなるなど）
+- `mousePressed` イベントを追加して、クリックで特殊な図形（星型など）を描くようにしてみましょう
+- 描いた絵を保存する機能を追加してみましょう（`p.saveCanvas()` を使います）
+
+</div>

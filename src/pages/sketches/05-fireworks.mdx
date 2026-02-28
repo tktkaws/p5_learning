@@ -1,0 +1,105 @@
+---
+layout: ../../layouts/Layout.astro
+title: "花火パーティクル"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="fireworks" />
+
+<div class="article-content">
+
+## 花火パーティクル
+
+クリックで花火を打ち上げられます。自動でもランダムに打ち上がります。パーティクルシステムと重力の基本を学びます。
+
+## パーティクルシステムとは
+
+大量の小さな粒子（パーティクル）を生成し、物理法則に従って動かす手法です。花火、煙、雨、炎など自然現象の表現に使われます。
+
+```
+[生成] → [更新(物理)] → [描画] → [消滅判定]
+  ↑                                    ↓
+  ←── ← ← ← ← ← ← ← ← ← ← ← ← ← ←┘
+```
+
+## クラスでパーティクルを管理
+
+```js
+class Particle {
+  constructor(x, y, hue, isShell) {
+    this.x = x;
+    this.y = y;
+    this.hue = hue;
+    this.alpha = 100;
+
+    if (isShell) {
+      // 打ち上げ弾：上方向に速い
+      this.vx = p.random(-0.5, 0.5);
+      this.vy = p.random(-10, -7);
+    } else {
+      // 火花：全方向にランダム
+      const angle = p.random(p.TWO_PI);
+      const speed = p.random(1, 5);
+      this.vx = p.cos(angle) * speed;
+      this.vy = p.sin(angle) * speed;
+    }
+  }
+
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vy += gravity; // 重力
+    this.alpha -= 1.5;  // フェードアウト
+  }
+}
+```
+
+### ポイント
+
+- **位置** (`x`, `y`) と **速度** (`vx`, `vy`) を持つ
+- 毎フレーム `位置 += 速度` で移動し、`速度 += 重力` で減速・落下
+- `alpha` を減らしていき、0 になったら削除
+
+## 花火のライフサイクル
+
+```
+1. mousePressed → Firework生成（shell = 上昇する弾）
+2. shell が上昇 → vy が 0 以上になったら爆発
+3. 爆発 → 30〜60個の Particle を全方向に生成
+4. 各 Particle が重力で落下しながらフェードアウト
+5. 全 Particle が消えたら Firework を削除
+```
+
+## 配列の後ろから削除するパターン
+
+```js
+for (let i = fireworks.length - 1; i >= 0; i--) {
+  fireworks[i].update();
+  if (fireworks[i].isDead()) fireworks.splice(i, 1);
+}
+```
+
+> 配列を**後ろから前に**ループしながら `splice` で削除するのが定石です。前からループすると、削除時にインデックスがずれてバグになります。
+
+## 重力の実装
+
+```js
+const gravity = 0.08;
+
+update() {
+  this.vy += gravity; // 毎フレーム下向きの力を加える
+}
+```
+
+- `gravity` が大きいほど速く落下します
+- 打ち上げ弾は初速が大きい負の `vy` で上に飛び、重力で減速→停止→落下
+
+## 試してみよう
+
+- `gravity` の値を変えて花火の高さや落下速度を調整してみましょう
+- 爆発時のパーティクル数 `p.random(30, 60)` を増やすと豪華に
+- `this.alpha -= 1.5` を小さくすると火花が長く残ります
+- 爆発時に2色以上使うようにしてみましょう
+
+</div>

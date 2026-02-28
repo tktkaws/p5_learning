@@ -1,0 +1,100 @@
+---
+layout: ../../layouts/Layout.astro
+title: "Perlinノイズフロー"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="noise-flow" />
+
+<div class="article-content">
+
+## Perlinノイズフロー
+
+500個の粒子が Perlin ノイズで生成されたフローフィールド（流れの場）に沿って動きます。クリックでリセットできます。
+
+## Perlinノイズとは
+
+`random()` が毎回バラバラな値を返すのに対し、`noise()` は**滑らかに変化する乱数**を返します。自然界の地形、雲、水面のような有機的なパターンを作るのに最適です。
+
+```js
+// random() — ギザギザ
+// ■ □ ■ ■ □ ■ □ □ ■ □
+
+// noise() — なめらか
+// ▁ ▂ ▃ ▅ ▆ ▇ ▆ ▅ ▃ ▂
+```
+
+```js
+const value = p.noise(x, y); // 0〜1 の滑らかな値
+```
+
+`noise()` に渡す座標が近いほど、返る値も近くなります。
+
+## フローフィールドの仕組み
+
+キャンバスの各位置に「流れの方向」を割り当て、粒子はその方向に沿って移動します。
+
+```js
+// 各粒子の位置からノイズ値を取得し、角度に変換
+const angle = p.noise(
+  this.x * noiseScale,  // x座標（スケーリング）
+  this.y * noiseScale,  // y座標
+  zOffset               // 時間（ゆっくり変化）
+) * p.TWO_PI * 2;
+
+// その角度の方向に移動
+this.x += p.cos(angle) * this.speed;
+this.y += p.sin(angle) * this.speed;
+```
+
+### noiseScale の役割
+
+```
+noiseScale = 0.001 → 大きな渦、ゆったりした流れ
+noiseScale = 0.005 → 中程度（このスケッチ）
+noiseScale = 0.02  → 細かい渦、カオス的
+```
+
+`noiseScale` は座標にかける係数で、小さいほど広い範囲で似た方向になり、大きいほど細かく方向が変わります。
+
+## zOffset で時間変化
+
+```js
+zOffset += 0.001; // 毎フレームほんの少しずつ変える
+```
+
+`noise()` の 3 番目の引数を時間で変化させることで、フローフィールド全体がゆっくり変わっていきます。
+
+## 軌跡の描画テクニック
+
+```js
+// 背景を完全にクリアせず、薄い半透明の矩形を重ねる
+p.fill(0, 0, 10, 2);
+p.rect(0, 0, p.width, p.height);
+
+// 粒子は前フレームの位置から線を引く
+p.stroke(hue, 60, 90, 15); // 低い透明度
+p.line(this.prevX, this.prevY, this.x, this.y);
+```
+
+- `background()` で毎フレーム全消しする代わりに、薄い矩形を重ねてゆっくりフェードさせます
+- 粒子は `circle` ではなく前の位置からの **線** を描くことで、流れの軌跡が見えます
+
+## noise() と random() の比較
+
+| | `random()` | `noise()` |
+|---|---|---|
+| 出力 | 完全にランダム | 滑らかに変化 |
+| 引数 | 範囲（min, max） | 座標（x, y, z） |
+| 用途 | ランダム配置、確率 | 地形、流れ、自然な動き |
+| 隣接する値 | 無関係 | 似た値 |
+
+## 試してみよう
+
+- `noiseScale` を変えて渦の大きさを調整してみましょう
+- `numParticles` を増減させて密度を変えてみましょう
+- `zOffset += 0.001` の値を大きくするとフローが速く変化します
+- 粒子の色を位置ではなく速度で変えてみましょう
+
+</div>
