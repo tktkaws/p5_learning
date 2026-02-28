@@ -1,0 +1,244 @@
+---
+import Layout from "../../layouts/Layout.astro";
+
+const sketches = [
+  { name: "basic-shapes", label: "01 基本図形と色", captureFrame: 5 },
+  { name: "animation", label: "02 アニメーション入門", captureFrame: 60 },
+  { name: "mouse-interaction", label: "03 マウスインタラクション", captureFrame: 5 },
+  { name: "kaleidoscope", label: "04 万華鏡パターン", captureFrame: 120 },
+  { name: "fireworks", label: "05 花火パーティクル", captureFrame: 90 },
+  { name: "noise-flow", label: "06 Perlinノイズフロー", captureFrame: 150 },
+  { name: "keyboard-drawing", label: "07 キーボードお絵かき", captureFrame: 5 },
+];
+---
+
+<Layout title="サムネイル生成">
+  <h1 class="page-title">サムネイル生成ツール</h1>
+  <p class="page-subtitle">
+    各スケッチを描画してサムネイルPNGを生成します。<br />
+    生成後、ダウンロードして <code>public/thumbnails/</code> に配置してください。
+  </p>
+
+  <div class="controls">
+    <button id="generate-all" type="button">全スケッチを生成</button>
+    <button id="download-all" type="button" disabled>一括ダウンロード</button>
+    <span id="status"></span>
+  </div>
+
+  <div class="thumbnail-grid">
+    {
+      sketches.map((s) => (
+        <div
+          class="thumbnail-item"
+          data-sketch={s.name}
+          data-capture-frame={s.captureFrame}
+        >
+          <div class="thumbnail-canvas-area" />
+          <div class="thumbnail-label">{s.label}</div>
+          <div class="thumbnail-status">待機中</div>
+        </div>
+      ))
+    }
+  </div>
+</Layout>
+
+<style>
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .controls button {
+    padding: 0.5rem 1.25rem;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-primary);
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .controls button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .controls button:not(:disabled):hover {
+    opacity: 0.85;
+  }
+
+  #status {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+  }
+
+  .thumbnail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .thumbnail-item {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .thumbnail-canvas-area {
+    aspect-ratio: 1;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .thumbnail-canvas-area img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .thumbnail-canvas-area canvas {
+    display: none !important;
+  }
+
+  .thumbnail-label {
+    padding: 0.5rem 0.75rem 0.25rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .thumbnail-status {
+    padding: 0 0.75rem 0.5rem;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+  }
+
+  .thumbnail-status.done {
+    color: #16a34a;
+  }
+</style>
+
+<script>
+  import p5 from "p5";
+
+  interface SketchResult {
+    name: string;
+    dataUrl: string;
+  }
+
+  const results: SketchResult[] = [];
+
+  async function generateThumbnail(item: HTMLElement): Promise<SketchResult | null> {
+    const name = item.dataset.sketch!;
+    const captureFrame = parseInt(item.dataset.captureFrame || "60");
+    const statusEl = item.querySelector(".thumbnail-status") as HTMLElement;
+    const canvasArea = item.querySelector(".thumbnail-canvas-area") as HTMLElement;
+
+    statusEl.textContent = "生成中...";
+
+    const modules = import.meta.glob<{ default: (p: p5) => void }>(
+      "../../sketches/*.js",
+      { eager: false }
+    );
+
+    const key = `../../sketches/${name}.js`;
+    const loader = modules[key];
+    if (!loader) {
+      statusEl.textContent = "スケッチが見つかりません";
+      return null;
+    }
+
+    const mod = await loader();
+
+    return new Promise((resolve) => {
+      const mount = document.createElement("div");
+      canvasArea.appendChild(mount);
+
+      let instance: p5 | null = null;
+
+      const wrappedSketch = (p: p5) => {
+        mod.default(p);
+
+        const origSetup = p.setup;
+        p.setup = () => {
+          p.createCanvas(400, 400);
+          origSetup?.call(p);
+          p.resizeCanvas(400, 400);
+        };
+
+        const origDraw = p.draw;
+        p.draw = () => {
+          origDraw?.call(p);
+
+          if (p.frameCount >= captureFrame) {
+            const canvas = mount.querySelector("canvas");
+            if (canvas) {
+              const dataUrl = canvas.toDataURL("image/png");
+
+              // プレビュー表示
+              const img = document.createElement("img");
+              img.src = dataUrl;
+              canvasArea.innerHTML = "";
+              canvasArea.appendChild(img);
+
+              statusEl.textContent = "生成完了";
+              statusEl.classList.add("done");
+
+              p.noLoop();
+              instance?.remove();
+
+              resolve({ name, dataUrl });
+              return;
+            }
+
+            p.noLoop();
+            statusEl.textContent = "キャプチャ失敗";
+            resolve(null);
+          }
+        };
+      };
+
+      instance = new p5(wrappedSketch, mount);
+    });
+  }
+
+  const generateBtn = document.getElementById("generate-all") as HTMLButtonElement;
+  const downloadBtn = document.getElementById("download-all") as HTMLButtonElement;
+  const statusEl = document.getElementById("status") as HTMLElement;
+
+  generateBtn.addEventListener("click", async () => {
+    generateBtn.disabled = true;
+    downloadBtn.disabled = true;
+    results.length = 0;
+
+    const items = document.querySelectorAll<HTMLElement>(".thumbnail-item");
+    let done = 0;
+
+    for (const item of items) {
+      statusEl.textContent = `生成中... (${done + 1}/${items.length})`;
+      const result = await generateThumbnail(item);
+      if (result) results.push(result);
+      done++;
+    }
+
+    statusEl.textContent = `完了 (${results.length}/${items.length})`;
+    if (results.length > 0) downloadBtn.disabled = false;
+  });
+
+  downloadBtn.addEventListener("click", () => {
+    for (const { name, dataUrl } of results) {
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${name}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  });
+</script>

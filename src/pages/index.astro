@@ -1,6 +1,5 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import P5Thumbnail from "../components/P5Thumbnail.astro";
 
 const sketches = [
   {
@@ -8,56 +7,49 @@ const sketches = [
     title: "基本図形と色",
     desc: "circle, rect, fill, stroke — p5.js の描画の基本を学ぶ",
     href: "/sketches/01-basic-shapes",
-    sketch: "basic-shapes",
-    captureFrame: 5,
+    thumbnail: "basic-shapes",
   },
   {
     number: "02",
     title: "アニメーション入門",
     desc: "draw() ループとフレームの仕組みで動きを作る",
     href: "/sketches/02-animation",
-    sketch: "animation",
-    captureFrame: 60,
+    thumbnail: "animation",
   },
   {
     number: "03",
     title: "マウスインタラクション",
     desc: "mouseX / mouseY でユーザー入力に反応するスケッチ",
     href: "/sketches/03-mouse-interaction",
-    sketch: "mouse-interaction",
-    captureFrame: 5,
+    thumbnail: "mouse-interaction",
   },
   {
     number: "04",
     title: "万華鏡パターン",
     desc: "rotate / translate と対称性で万華鏡模様を自動生成",
     href: "/sketches/04-kaleidoscope",
-    sketch: "kaleidoscope",
-    captureFrame: 120,
+    thumbnail: "kaleidoscope",
   },
   {
     number: "05",
     title: "花火パーティクル",
     desc: "クラスと配列で粒子を管理し、重力で花火を表現",
     href: "/sketches/05-fireworks",
-    sketch: "fireworks",
-    captureFrame: 90,
+    thumbnail: "fireworks",
   },
   {
     number: "06",
     title: "Perlinノイズフロー",
     desc: "noise() で有機的な流れを生み出すフローフィールド",
     href: "/sketches/06-noise-flow",
-    sketch: "noise-flow",
-    captureFrame: 150,
+    thumbnail: "noise-flow",
   },
   {
     number: "07",
     title: "キーボードお絵かき",
     desc: "keyPressed でブラシ切替、マウスで描画するペイントツール",
     href: "/sketches/07-keyboard-drawing",
-    sketch: "keyboard-drawing",
-    captureFrame: 5,
+    thumbnail: "keyboard-drawing",
   },
 ];
 ---
@@ -71,12 +63,13 @@ const sketches = [
       sketches.map((s) => (
         <li>
           <a href={s.href}>
-            <P5Thumbnail
-              sketch={s.sketch}
-              width={200}
-              height={200}
-              captureFrame={s.captureFrame}
-            />
+            <div class="sketch-thumbnail">
+              <img
+                src={`/thumbnails/${s.thumbnail}.png`}
+                alt={s.title}
+                loading="lazy"
+              />
+            </div>
             <div class="sketch-info">
               <span class="sketch-number">#{s.number}</span>
               <div class="sketch-title">{s.title}</div>
@@ -113,6 +106,19 @@ const sketches = [
     border-color: var(--color-primary);
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
     transform: translateY(-2px);
+  }
+
+  .sketch-thumbnail {
+    aspect-ratio: 1;
+    background: #f0f0f0;
+    overflow: hidden;
+  }
+
+  .sketch-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
 
   .sketch-info {
