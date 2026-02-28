@@ -1,0 +1,228 @@
+/* Reset & Base */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-text: #1a1a2e;
+  --color-text-muted: #6b7280;
+  --color-primary: #6366f1;
+  --color-primary-light: #818cf8;
+  --color-border: #e5e7eb;
+  --color-code-bg: #f3f4f6;
+  --font-sans: "Inter", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  --max-width: 768px;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-bg);
+  line-height: 1.8;
+}
+
+/* Navigation */
+.site-nav {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.site-nav-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.site-nav a {
+  color: var(--color-text);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.site-nav a:hover {
+  color: var(--color-primary);
+}
+
+/* Main content */
+.page-container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+/* Canvas wrapper */
+.p5-canvas-wrapper {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.p5-canvas-wrapper canvas {
+  border-radius: 8px;
+}
+
+/* Article styles */
+.article-content {
+  line-height: 1.9;
+}
+
+.article-content h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.article-content h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-top: 2.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.article-content h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.article-content p {
+  margin-bottom: 1rem;
+}
+
+.article-content ul,
+.article-content ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.article-content li {
+  margin-bottom: 0.35rem;
+}
+
+.article-content code {
+  font-family: var(--font-mono);
+  background: var(--color-code-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.88em;
+}
+
+.article-content pre {
+  background: var(--color-text);
+  color: #e5e7eb;
+  padding: 1.25rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.article-content pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.article-content a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.article-content a:hover {
+  color: var(--color-primary-light);
+}
+
+.article-content blockquote {
+  border-left: 3px solid var(--color-primary);
+  padding: 0.5rem 1rem;
+  margin-bottom: 1rem;
+  background: var(--color-code-bg);
+  border-radius: 0 6px 6px 0;
+  color: var(--color-text-muted);
+}
+
+/* Index page */
+.sketch-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sketch-list a {
+  display: block;
+  padding: 1rem 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--color-text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.sketch-list a:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+}
+
+.sketch-list .sketch-number {
+  font-size: 0.8rem;
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
+.sketch-list .sketch-title {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.sketch-list .sketch-desc {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  margin-top: 0.25rem;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
+}

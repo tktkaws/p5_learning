@@ -1,0 +1,35 @@
+---
+interface Props {
+  sketch: string;
+}
+
+const { sketch } = Astro.props;
+---
+
+<div class="p5-canvas-wrapper">
+  <div class="p5-mount" data-sketch={sketch}></div>
+</div>
+
+<script>
+  import p5 from "p5";
+
+  document.querySelectorAll<HTMLDivElement>(".p5-mount").forEach(async (el) => {
+    const name = el.dataset.sketch;
+    if (!name) return;
+
+    const modules = import.meta.glob<{ default: (p: p5) => void }>(
+      "../sketches/*.js",
+      { eager: false }
+    );
+
+    const key = `../sketches/${name}.js`;
+    const loader = modules[key];
+    if (!loader) {
+      console.error(`Sketch not found: ${name}`);
+      return;
+    }
+
+    const mod = await loader();
+    new p5(mod.default, el);
+  });
+</script>
