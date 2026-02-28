@@ -8,7 +8,30 @@ const { sketch } = Astro.props;
 
 <div class="p5-canvas-wrapper">
   <div class="p5-mount" data-sketch={sketch}></div>
+  <button class="capture-btn" data-sketch={sketch} type="button">
+    PNG をダウンロード
+  </button>
 </div>
+
+<style>
+  .capture-btn {
+    display: block;
+    margin: 0.75rem auto 0;
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .capture-btn:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+</style>
 
 <script>
   import p5 from "p5";
@@ -31,5 +54,19 @@ const { sketch } = Astro.props;
 
     const mod = await loader();
     new p5(mod.default, el);
+  });
+
+  document.querySelectorAll<HTMLButtonElement>(".capture-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const name = btn.dataset.sketch;
+      const wrapper = btn.closest(".p5-canvas-wrapper");
+      const canvas = wrapper?.querySelector("canvas");
+      if (!canvas || !name) return;
+
+      const a = document.createElement("a");
+      a.href = canvas.toDataURL("image/png");
+      a.download = `${name}.png`;
+      a.click();
+    });
   });
 </script>
