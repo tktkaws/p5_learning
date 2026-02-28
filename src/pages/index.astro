@@ -1,0 +1,43 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const sketches = [
+  {
+    number: "01",
+    title: "基本図形と色",
+    desc: "circle, rect, fill, stroke — p5.js の描画の基本を学ぶ",
+    href: "/sketches/01-basic-shapes",
+  },
+  {
+    number: "02",
+    title: "アニメーション入門",
+    desc: "draw() ループとフレームの仕組みで動きを作る",
+    href: "/sketches/02-animation",
+  },
+  {
+    number: "03",
+    title: "マウスインタラクション",
+    desc: "mouseX / mouseY でユーザー入力に反応するスケッチ",
+    href: "/sketches/03-mouse-interaction",
+  },
+];
+---
+
+<Layout title="Home">
+  <h1 class="page-title">p5.js Learning</h1>
+  <p class="page-subtitle">p5.js をひとつずつ学ぶインタラクティブノート</p>
+
+  <ul class="sketch-list">
+    {
+      sketches.map((s) => (
+        <li>
+          <a href={s.href}>
+            <div class="sketch-number">#{s.number}</div>
+            <div class="sketch-title">{s.title}</div>
+            <div class="sketch-desc">{s.desc}</div>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</Layout>

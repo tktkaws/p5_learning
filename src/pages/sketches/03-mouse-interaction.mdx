@@ -1,0 +1,87 @@
+---
+layout: ../../layouts/Layout.astro
+title: "マウスインタラクション"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="mouse-interaction" />
+
+<div class="article-content">
+
+## マウスインタラクション
+
+p5.js では `mouseX` と `mouseY` でリアルタイムにマウスの位置を取得できます。上のキャンバスでは、マウスの軌跡が円のトレイルとして描画されています。
+
+## mouseX / mouseY
+
+```js
+p.draw = () => {
+  p.circle(p.mouseX, p.mouseY, 40);
+};
+```
+
+これだけで、マウスの位置に円が描かれます。`mouseX` と `mouseY` は `draw()` が呼ばれるたびに自動で更新されます。
+
+## 軌跡（トレイル）の実装
+
+このスケッチでは **配列** を使って過去のマウス位置を保存しています。
+
+```js
+const trail = [];
+const maxTrail = 30;
+
+p.draw = () => {
+  p.background(240);
+
+  trail.push({ x: p.mouseX, y: p.mouseY });
+  if (trail.length > maxTrail) trail.shift();
+
+  for (let i = 0; i < trail.length; i++) {
+    const t = i / trail.length; // 0 → 1
+    const size = t * 40 + 5;
+    const alpha = t * 200 + 30;
+    p.fill(99, 102, 241, alpha);
+    p.circle(trail[i].x, trail[i].y, size);
+  }
+};
+```
+
+### ポイント
+
+1. **`trail.push()`** — 毎フレーム、現在のマウス位置を配列に追加
+2. **`trail.shift()`** — 配列が `maxTrail` を超えたら、一番古い位置を削除（FIFO）
+3. **`t = i / trail.length`** — 正規化した値（0〜1）を使い、古いほど小さく・薄くする
+
+## その他のマウス変数
+
+| 変数/関数 | 説明 |
+|-----------|------|
+| `p.mouseX` / `p.mouseY` | 現在のマウス位置 |
+| `p.pmouseX` / `p.pmouseY` | 1 フレーム前のマウス位置 |
+| `p.mouseIsPressed` | マウスボタンが押されているか（boolean） |
+| `p.mouseButton` | 押されているボタン（`LEFT`, `RIGHT`, `CENTER`） |
+
+## イベント関数
+
+`draw()` の外で、マウスイベントに反応する関数も定義できます。
+
+```js
+export default function (p) {
+  p.setup = () => { p.createCanvas(400, 400); };
+
+  p.mousePressed = () => {
+    // クリックした位置に円を描く
+    p.fill(p.random(255), p.random(255), p.random(255));
+    p.circle(p.mouseX, p.mouseY, 30);
+  };
+}
+```
+
+## 試してみよう
+
+- `maxTrail` の値を変えてトレイルの長さを変えてみましょう
+- 円の色をマウスの速度（`p.dist(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY)`）で変化させてみましょう
+- `p.mouseIsPressed` を条件に加えて、クリック中だけ描画するようにしてみましょう
+
+</div>
