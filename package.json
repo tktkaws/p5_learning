@@ -1,0 +1,19 @@
+{
+  "name": "p5_learning",
+  "version": "1.0.0",
+  "description": "p5.js learning site",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@astrojs/mdx": "^4.3.13",
+    "astro": "^5.18.0",
+    "p5": "^2.2.2"
+  }
+}
