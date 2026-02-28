@@ -86,31 +86,36 @@ const sketches = [
   .sketch-grid {
     list-style: none;
     padding: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
   }
 
   .sketch-grid a {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 12px;
     text-decoration: none;
     color: var(--color-text);
     overflow: hidden;
-    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+    padding: 0.75rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
 
   .sketch-grid a:hover {
     border-color: var(--color-primary);
     box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
-    transform: translateY(-2px);
   }
 
   .sketch-thumbnail {
-    aspect-ratio: 1;
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
     background: #f0f0f0;
+    border-radius: 8px;
     overflow: hidden;
   }
 
@@ -122,7 +127,8 @@ const sketches = [
   }
 
   .sketch-info {
-    padding: 0.75rem 1rem 1rem;
+    flex: 1;
+    min-width: 0;
   }
 
   .sketch-number {

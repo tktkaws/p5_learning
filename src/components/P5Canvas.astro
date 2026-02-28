@@ -8,15 +8,15 @@ const { sketch } = Astro.props;
 
 <div class="p5-canvas-wrapper">
   <div class="p5-mount" data-sketch={sketch}></div>
-  <button class="capture-btn" data-sketch={sketch} type="button">
-    PNG をダウンロード
-  </button>
 </div>
+<button class="capture-btn" data-sketch={sketch} type="button">
+  PNG をダウンロード
+</button>
 
 <style>
   .capture-btn {
     display: block;
-    margin: 0.75rem auto 0;
+    margin: 0.75rem auto 2rem;
     padding: 0.4rem 1rem;
     border: 1px solid var(--color-border);
     border-radius: 6px;
@@ -59,7 +59,7 @@ const { sketch } = Astro.props;
   document.querySelectorAll<HTMLButtonElement>(".capture-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const name = btn.dataset.sketch;
-      const wrapper = btn.closest(".p5-canvas-wrapper");
+      const wrapper = btn.previousElementSibling;
       const canvas = wrapper?.querySelector("canvas");
       if (!canvas || !name) return;
 
