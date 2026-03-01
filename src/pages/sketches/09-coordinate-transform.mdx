@@ -1,0 +1,90 @@
+---
+layout: ../../layouts/Layout.astro
+title: "座標変換の基本"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="coordinate-transform" />
+
+<div class="article-content">
+
+## 座標変換の基本
+
+p5.js の `translate()`, `rotate()`, `scale()` を使うと、座標系そのものを動かして描画できます。時計の針や回転アニメーションなど、**中心軸を変えて描く**表現に不可欠です。
+
+## translate() — 原点を移動
+
+```js
+p.translate(200, 200); // 原点をキャンバス中央に
+p.circle(0, 0, 50);    // 中央に円が描かれる
+```
+
+デフォルトの原点は左上 (0, 0) ですが、`translate()` で好きな位置に移動できます。
+
+## rotate() — 座標系を回転
+
+```js
+p.translate(200, 200);
+p.rotate(p.radians(45)); // 45度回転
+p.rect(0, 0, 60, 60);
+```
+
+**注意**: `rotate()` は原点を中心に回転します。先に `translate()` で回転の中心を決めてから `rotate()` するのが基本パターンです。
+
+## push() / pop() — 座標変換を局所化
+
+```js
+p.push();               // 現在の状態を保存
+p.translate(200, 200);
+p.rotate(angle);
+p.line(0, 0, 0, -100);  // 回転した線を描画
+p.pop();                 // 座標系を元に戻す
+
+// ここでは元の座標系で描画できる
+```
+
+`push()` / `pop()` で囲むことで、座標変換の影響を閉じ込められます。
+
+## 時計の実装パターン
+
+このスケッチでは、アナログ時計を座標変換で実装しています。
+
+```js
+// 1. 原点を時計の中心に移動
+p.translate(200, 180);
+
+// 2. 各針を rotate で回転して描画
+p.push();
+const h = p.hour() % 12;
+const m = p.minute();
+p.rotate(h * 30 + m * 0.5); // 時針: 1時間=30°
+p.line(0, 10, 0, -65);
+p.pop();
+```
+
+### 角度の計算
+
+| 針 | 1単位あたりの角度 | 式 |
+|----|-----------------|-----|
+| 時針 | 30° / 時 | `hour * 30 + minute * 0.5` |
+| 分針 | 6° / 分 | `minute * 6 + second * 0.1` |
+| 秒針 | 6° / 秒 | `second * 6` |
+
+## scale() — 拡大・縮小
+
+```js
+p.translate(200, 200);
+p.scale(2);          // 2倍に拡大
+p.circle(0, 0, 50);  // 見た目は直径100の円
+```
+
+`scale()` も原点を基準に拡大縮小します。`translate()` → `rotate()` → `scale()` → 描画 の順が基本です。
+
+## 試してみよう
+
+- 秒針にスムーズな動き（`millis()` を使う）を加えてみましょう
+- 時計の周りに数字（1〜12）を `rotate` で配置してみましょう
+- `scale()` を使ってマウス位置に応じて時計のサイズを変えてみましょう
+
+</div>
