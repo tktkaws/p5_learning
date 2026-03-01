@@ -1,0 +1,72 @@
+---
+layout: ../../layouts/Layout.astro
+title: "グラデーションと色空間"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="gradient-color" />
+
+<div class="article-content">
+
+## グラデーションと色空間
+
+p5.js ではデフォルトの RGB に加え、**HSB（色相・彩度・明度）** モードで色を扱えます。HSB は直感的に色を操作しやすく、グラデーションやカラフルな表現に向いています。
+
+## colorMode(HSB)
+
+```js
+p.colorMode(p.HSB, 360, 100, 100);
+p.fill(0, 80, 90);   // 赤（色相 0°）
+p.fill(120, 80, 90);  // 緑（色相 120°）
+p.fill(240, 80, 90);  // 青（色相 240°）
+```
+
+| 引数 | 意味 | 範囲（上の例） |
+|------|------|---------------|
+| H（Hue） | 色相 — 色の種類 | 0〜360（角度） |
+| S（Saturation） | 彩度 — 鮮やかさ | 0〜100 |
+| B（Brightness） | 明度 — 明るさ | 0〜100 |
+
+## 虹色グラデーションの描き方
+
+キャンバスの各 x 座標に対して色相を `map()` で割り当てると、虹色の帯が描けます。
+
+```js
+p.colorMode(p.HSB, 360, 100, 100);
+for (let x = 0; x < p.width; x++) {
+  const hue = p.map(x, 0, p.width, 0, 360);
+  p.stroke(hue, 80, 90);
+  p.line(x, 0, x, 60);
+}
+```
+
+## lerpColor() — 2 色間の補間
+
+`lerpColor(c1, c2, amt)` は 2 つの色の間を `amt`（0〜1）で滑らかに補間します。
+
+```js
+const c1 = p.color(99, 102, 241);  // indigo
+const c2 = p.color(236, 72, 153);  // pink
+
+for (let x = 0; x < p.width; x++) {
+  const t = x / p.width;
+  const c = p.lerpColor(c1, c2, t);
+  p.stroke(c);
+  p.line(x, 0, x, 60);
+}
+```
+
+### ポイント
+
+1. **`map()`** — ある範囲の値を別の範囲に変換する。ピクセル位置 → 色相のマッピングに最適
+2. **`lerpColor()`** — RGB/HSB 問わず 2 色間をスムーズに補間
+3. **`push()` / `pop()`** — `colorMode` の切り替えを局所的に閉じ込められる
+
+## 試してみよう
+
+- `lerpColor` の 2 色を変えて、好きな配色のグラデーションを作ってみましょう
+- 彩度（S）や明度（B）を変えた色相グリッドを作ってみましょう
+- `noise()` で色相をゆらして、有機的なグラデーションアニメーションにしてみましょう
+
+</div>
