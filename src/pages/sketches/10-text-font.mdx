@@ -1,0 +1,102 @@
+---
+layout: ../../layouts/Layout.astro
+title: "テキストとフォント"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="text-font" />
+
+<div class="article-content">
+
+## テキストとフォント
+
+p5.js では `text()` 関数でキャンバスにテキストを描画できます。サイズ、配置、フォントを自在にコントロールし、タイピング風アニメーションのような動きも作れます。
+
+## text() — テキストの描画
+
+```js
+p.textSize(24);
+p.text("Hello!", 100, 200); // (x, y) にテキストを描画
+```
+
+`text()` は `fill()` で指定した色で描画されます（`stroke()` も有効）。
+
+## textSize() — 文字サイズ
+
+```js
+p.textSize(12); // 小さい
+p.textSize(36); // 大きい
+```
+
+ピクセル単位で文字サイズを指定します。
+
+## textAlign() — 配置
+
+```js
+p.textAlign(p.LEFT);    // 左揃え（デフォルト）
+p.textAlign(p.CENTER);  // 中央揃え
+p.textAlign(p.RIGHT);   // 右揃え
+```
+
+第 2 引数で垂直方向も指定できます：
+
+```js
+p.textAlign(p.CENTER, p.CENTER); // 水平・垂直ともに中央
+```
+
+## textFont() — フォント指定
+
+```js
+p.textFont("monospace");       // システムフォント
+p.textFont("Georgia");
+p.textFont("sans-serif");
+```
+
+Web フォントを使う場合は CSS で `@font-face` を読み込んでおく必要があります。
+
+## タイピングアニメーションの実装
+
+このスケッチでは、`millis()` を使って 1 文字ずつ表示するアニメーションを実装しています。
+
+```js
+const message = "Hello, p5.js!";
+let charIndex = 0;
+let lastTime = 0;
+const typeSpeed = 120; // ms
+
+p.draw = () => {
+  if (p.millis() - lastTime > typeSpeed && charIndex < message.length) {
+    charIndex++;
+    lastTime = p.millis();
+  }
+
+  const displayed = message.substring(0, charIndex);
+  p.text(displayed, 200, 60);
+};
+```
+
+### ポイント
+
+1. **`millis()`** — スケッチ開始からの経過ミリ秒。フレームレートに依存しないタイミング制御に使える
+2. **`substring(0, n)`** — 文字列の先頭から n 文字を切り出す
+3. **カーソル点滅** — `floor(millis() / 500) % 2` で 0.5 秒ごとに 0/1 を切り替え
+
+## テキスト関連のまとめ
+
+| 関数 | 説明 |
+|------|------|
+| `text(str, x, y)` | テキストを描画 |
+| `textSize(px)` | 文字サイズを設定 |
+| `textAlign(h, v)` | 配置（LEFT/CENTER/RIGHT, TOP/CENTER/BOTTOM） |
+| `textFont(name)` | フォントを設定 |
+| `textWidth(str)` | 文字列の描画幅をピクセルで取得 |
+| `textLeading(px)` | 行間を設定 |
+
+## 試してみよう
+
+- `message` を好きな文字列に変えてみましょう
+- `typeSpeed` を変えてタイピングの速さを調整してみましょう
+- 1 行ずつ表示される複数行テキストアニメーションに拡張してみましょう
+
+</div>
