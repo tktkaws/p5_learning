@@ -1,0 +1,82 @@
+---
+layout: ../../layouts/Layout.astro
+title: "lerpColor で配色グラデーション"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="lerp-gradient" />
+
+<div class="article-content">
+
+## lerpColor で配色グラデーション
+
+`lerpColor()` の 2 色を変えるだけで、まったく違う印象のグラデーションが作れます。**クリックでプリセットを切り替え**られます。
+
+## lerpColor() のおさらい
+
+```js
+const c1 = p.color(99, 102, 241);  // 始点の色
+const c2 = p.color(236, 72, 153);  // 終点の色
+
+const c = p.lerpColor(c1, c2, 0.5); // ちょうど中間色
+```
+
+`amt`（第3引数）を **0 → 1** で変化させると、c1 から c2 へ滑らかに遷移します。
+
+## グラデーションの方向
+
+### 横方向
+
+```js
+for (let x = 0; x < p.width; x++) {
+  const t = x / p.width;          // 0 → 1
+  p.stroke(p.lerpColor(c1, c2, t));
+  p.line(x, 0, x, height);
+}
+```
+
+### 縦方向
+
+```js
+for (let y = 0; y < height; y++) {
+  const t = y / height;
+  p.stroke(p.lerpColor(c1, c2, t));
+  p.line(0, y, p.width, y);
+}
+```
+
+### 放射状
+
+```js
+for (let r = maxR; r > 0; r--) {
+  const t = 1 - r / maxR;         // 中心ほど t が大きい
+  p.fill(p.lerpColor(c1, c2, t));
+  p.circle(cx, cy, r * 2);
+}
+```
+
+大きい円から順に描くのがポイントです（小さい円が上に重なる）。
+
+## 配色を選ぶコツ
+
+| 組み合わせ | 印象 |
+|---|---|
+| 同系色（青 → 紫） | 落ち着き・統一感 |
+| 補色（赤 → 緑系） | コントラスト・インパクト |
+| 暖色 → 寒色 | 温度感・ダイナミック |
+| 高彩度 → 低彩度 | フォーカス・誘導 |
+
+### ポイント
+
+1. **`lerpColor()` は RGB / HSB 両方で使える** — `colorMode` で切り替えると補間経路が変わる
+2. **amt の計算がグラデーションの向きを決める** — `x / width` で横、`y / height` で縦
+3. **大きい順に描くと放射状グラデーション** — 後から描いた小さい円が上に重なる
+
+## 試してみよう
+
+- RGB モードと HSB モードで同じ 2 色を `lerpColor` してみましょう（通る色が違います）
+- 3 色以上のグラデーション（c1→c2→c3）を `if` 文で区間分けして作ってみましょう
+- `mouseX` で `amt` を操作して、リアルタイムに色を変えてみましょう
+
+</div>
