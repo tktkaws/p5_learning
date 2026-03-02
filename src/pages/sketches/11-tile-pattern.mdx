@@ -1,0 +1,129 @@
+---
+layout: ../../layouts/Layout.astro
+title: "タイル模様"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="tile-pattern" />
+
+<div class="article-content">
+
+## タイル模様
+
+ネストした `for` ループでグリッドを描画し、3 種類のタイル模様を作ります。**クリックで市松模様 → モザイク → イスラム幾何学風に切り替え**できます。
+
+## グリッド描画の基本
+
+2 重の `for` ループで行と列を回し、各セルに図形を描きます。
+
+```js
+const cols = 8;
+const rows = 8;
+const cellW = p.width / cols;
+const cellH = p.height / rows;
+
+for (let row = 0; row < rows; row++) {
+  for (let col = 0; col < cols; col++) {
+    p.rect(col * cellW, row * cellH, cellW, cellH);
+  }
+}
+```
+
+`row` と `col` のインデックスを使って、各セルの色・形・回転を変えることでさまざまなパターンが生まれます。
+
+## 市松模様（チェッカーボード）
+
+行と列の合計が偶数か奇数かで 2 色を切り替えます。
+
+```js
+for (let row = 0; row < rows; row++) {
+  for (let col = 0; col < cols; col++) {
+    if ((col + row) % 2 === 0) {
+      p.fill(30, 30, 60);   // 暗い色
+    } else {
+      p.fill(230, 220, 200); // 明るい色
+    }
+    p.rect(col * cellW, row * cellH, cellW, cellH);
+  }
+}
+```
+
+`(col + row) % 2` がポイントです。隣り合うセルは必ず合計の偶奇が異なるため、交互に色が変わります。
+
+## モザイク
+
+`row` と `col` の値を `map()` で色に変換すると、位置に応じて色が変わるカラフルなモザイクになります。
+
+```js
+p.colorMode(p.HSB, 360, 100, 100);
+
+for (let row = 0; row < rows; row++) {
+  for (let col = 0; col < cols; col++) {
+    const hue = p.map(col + row, 0, cols + rows - 2, 0, 360);
+    const sat = p.map(row, 0, rows - 1, 50, 90);
+    const bri = p.map(col, 0, cols - 1, 70, 95);
+    p.fill(hue, sat, bri);
+    p.rect(col * cellW + 2, row * cellH + 2, cellW - 4, cellH - 4, 3);
+  }
+}
+```
+
+| 軸 | 割り当て | 効果 |
+|---|---|---|
+| `col + row` → Hue | 対角線方向に色相が変化 | 虹色の斜めグラデーション |
+| `row` → Saturation | 下に行くほど鮮やか | 縦の深み |
+| `col` → Brightness | 右に行くほど明るい | 横の明暗 |
+
+## イスラム幾何学風
+
+正多角形と星形を組み合わせると、イスラム装飾のような幾何学模様になります。
+
+### 正多角形の描き方
+
+```js
+function drawPolygon(cx, cy, radius, sides, rotation) {
+  p.beginShape();
+  for (let i = 0; i < sides; i++) {
+    const angle = (p.TWO_PI / sides) * i + rotation;
+    p.vertex(
+      cx + p.cos(angle) * radius,
+      cy + p.sin(angle) * radius
+    );
+  }
+  p.endShape(p.CLOSE);
+}
+```
+
+`sides` を変えるだけで三角形（3）、四角形（4）、六角形（6）、八角形（8）が描けます。
+
+### 星形の描き方
+
+内径と外径の頂点を交互に配置すると星形になります。
+
+```js
+function drawStar(cx, cy, innerR, outerR, points, rotation) {
+  p.beginShape();
+  for (let i = 0; i < points * 2; i++) {
+    const angle = (p.TWO_PI / (points * 2)) * i + rotation;
+    const r = i % 2 === 0 ? outerR : innerR;
+    p.vertex(cx + p.cos(angle) * r, cy + p.sin(angle) * r);
+  }
+  p.endShape(p.CLOSE);
+}
+```
+
+### ポイント
+
+1. **`(col + row) % n` で規則的なパターン** — 余りの値で色や形を切り替える
+2. **`map()` でインデックスを色に変換** — 位置ベースの配色の基本
+3. **`beginShape()` / `vertex()` で自由な多角形** — 正多角形・星形など何でも描ける
+4. **タイル間の隙間装飾** — 交点にダイヤモンドを置くとイスラム幾何学の雰囲気が出る
+
+## 試してみよう
+
+- 市松模様の色を 3 色以上にして `% 3` で切り替えてみましょう
+- モザイクに `noise()` を加えて、タイルごとに微妙に色をずらしてみましょう
+- 星形の頂点数（`points`）や内径/外径の比率を変えて、違う形のイスラム模様を試してみましょう
+
+</div>
