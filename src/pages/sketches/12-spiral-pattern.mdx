@@ -1,0 +1,118 @@
+---
+layout: ../../layouts/Layout.astro
+title: "螺旋パターン"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="spiral-pattern" />
+
+<div class="article-content">
+
+## 螺旋パターン
+
+極座標と三角関数を使って螺旋を描きます。**クリックでアルキメデス螺旋 → フィボナッチ螺旋 → 渦巻きアニメーションに切り替え**できます。
+
+## 極座標の基本
+
+螺旋は **極座標**（角度 `θ` と半径 `r`）で表すのが自然です。極座標から直交座標への変換は次のとおりです。
+
+```js
+const x = cos(theta) * r;
+const y = sin(theta) * r;
+```
+
+`θ` を少しずつ増やしながら `r` も変化させると、螺旋が描けます。
+
+## アルキメデス螺旋
+
+`r = a * θ` の関係で、角度に比例して半径が大きくなる螺旋です。巻きの間隔が一定になるのが特徴です。
+
+```js
+p.translate(p.width / 2, p.height / 2);
+p.noFill();
+p.beginShape();
+
+for (let i = 0; i < 600; i++) {
+  const theta = i * 0.04;
+  const r = 0.28 * theta; // r = a * θ
+  const x = p.cos(theta) * r;
+  const y = p.sin(theta) * r;
+  p.vertex(x, y);
+}
+
+p.endShape();
+```
+
+このスケッチでは 3 本の螺旋を `120°` ずつずらして描き、HSB カラーで彩色しています。
+
+| パラメータ | 効果 |
+|---|---|
+| `0.04`（角度の刻み） | 小さいほど滑らか、大きいほど粗い |
+| `0.28`（半径の係数） | 大きいほど巻きの間隔が広い |
+| `3`（螺旋の本数） | 回転対称の本数を変えられる |
+
+## フィボナッチ螺旋
+
+**黄金角**（約 137.5°）ずつ回転しながら点を配置すると、ひまわりの種のような美しいパターンになります。
+
+```js
+const goldenAngle = p.PI * (3 - p.sqrt(5)); // ≈ 2.3999... rad
+
+for (let i = 0; i < 500; i++) {
+  const theta = i * goldenAngle;
+  const r = p.sqrt(i) * 7;
+  const x = p.cos(theta) * r;
+  const y = p.sin(theta) * r;
+  p.circle(x, y, 5);
+}
+```
+
+### なぜ `sqrt(i)` を使うのか
+
+面積は `r²` に比例するので、`r = √i` とすることで点が均等な密度で分布します。黄金角と組み合わせることで、どの方向にも偏らない最適配置が生まれます。
+
+## 渦巻きアニメーション
+
+複数の「腕」に点を配置し、全体を回転させることで渦巻きの動きを表現します。
+
+```js
+const numArms = 5;
+const dotsPerArm = 80;
+
+for (let arm = 0; arm < numArms; arm++) {
+  const armOffset = (p.TWO_PI / numArms) * arm;
+  for (let i = 0; i < dotsPerArm; i++) {
+    const t = i / dotsPerArm;            // 0〜1 の正規化
+    const theta = t * p.TWO_PI * 3       // 3周分
+                + armOffset              // 腕ごとのオフセット
+                + angle;                 // 回転アニメーション
+    const r = t * 170;
+    p.circle(p.cos(theta) * r, p.sin(theta) * r, size);
+  }
+}
+
+angle += 0.015; // 毎フレーム少しずつ回転
+```
+
+| 要素 | 役割 |
+|---|---|
+| `numArms` | 腕の本数。増やすと花のように見える |
+| `t * TWO_PI * 3` | 3 周分巻く。回数を増やすと巻きが密になる |
+| `angle += 0.015` | ゆっくり回転。値を大きくすると速くなる |
+
+### ポイント
+
+1. **極座標 → 直交座標** — `cos(θ)*r, sin(θ)*r` の変換が螺旋描画の基本
+2. **`r` の関数を変える** — `r = aθ`（アルキメデス）、`r = √i`（フィボナッチ）で形が変わる
+3. **黄金角** — 自然界に現れる最も効率的な角度配置
+4. **回転アニメーション** — 角度にフレームごとの加算値を足すだけで動きが出る
+
+## 試してみよう
+
+- アルキメデス螺旋の本数を 5 本や 8 本に増やしてみましょう
+- フィボナッチ螺旋の点の数を増減して密度の変化を観察しましょう
+- 渦巻きの腕の数 `numArms` を変えて、銀河のような模様を作ってみましょう
+- `r = a * θ²`（フェルマー螺旋）や `r = a * e^(bθ)`（対数螺旋）を試してみましょう
+
+</div>
