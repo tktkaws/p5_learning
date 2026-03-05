@@ -1,0 +1,113 @@
+---
+layout: ../../layouts/Layout.astro
+title: "バネと振り子"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="spring-pendulum" />
+
+<div class="article-content">
+
+## バネと振り子
+
+左にバネ、右に振り子のシミュレーションです。**おもりをドラッグして引っ張り、離す**と物理法則に従って動きます。
+
+## フックの法則（バネ）
+
+バネの復元力は変位に比例します。
+
+```
+F = -k × x
+```
+
+- `k` — バネ定数（硬さ）。大きいほど硬いバネ
+- `x` — 自然長からの伸び（変位）
+- マイナスは「伸びたら縮む方向に力が働く」ことを意味
+
+```js
+const stretch = bobY - anchorY - restLen;
+const force = -k * stretch + gravity;
+velocity += force;
+velocity *= damping; // 減衰
+bobY += velocity;
+```
+
+重力で下に引かれ、バネで引き戻される。この繰り返しが振動を生みます。
+
+## 単振り子
+
+振り子の角加速度は重力と振り子の長さで決まります。
+
+```
+α = -(g / L) × sin(θ)
+```
+
+- `g` — 重力加速度
+- `L` — 振り子の長さ
+- `θ` — 鉛直方向からの角度
+
+```js
+const angAcc = -(gravity / pendLen) * sin(angle);
+angVel += angAcc;
+angVel *= damping; // 空気抵抗
+angle += angVel;
+```
+
+`sin(θ)` を使うため、角度が大きいと単純な正弦波にならず、非線形な動きをします。
+
+## おもりの位置計算
+
+振り子のおもり位置は角度と長さから三角関数で求めます。
+
+```js
+const bobX = pivotX + length * sin(angle);
+const bobY = pivotY + length * cos(angle);
+```
+
+`sin` が X 方向、`cos` が Y 方向なのは、角度を鉛直方向（下向き）から測っているためです。
+
+## 減衰（ダンピング）
+
+実世界では空気抵抗や摩擦で徐々に振幅が小さくなります。
+
+```js
+velocity *= 0.995; // バネの減衰
+angVel *= 0.998;   // 振り子の減衰
+```
+
+1 に近いほどゆっくり減衰し、小さいほど早く止まります。
+
+## ドラッグ操作の実装
+
+```js
+mousePressed() {
+  // おもりとの距離を計算
+  if (dist(mouseX, mouseY, bobX, bobY) < 20) {
+    dragging = "spring"; // ドラッグ開始
+    velocity = 0;        // 速度をリセット
+  }
+}
+
+mouseDragged() {
+  if (dragging === "spring") {
+    bobY = constrain(mouseY, min, max);
+    velocity = 0;
+  }
+}
+
+mouseReleased() {
+  dragging = null; // 離すと物理シミュレーション再開
+}
+```
+
+ドラッグ中は物理更新を止め、離した瞬間から速度 0 で再開します。
+
+## 試してみよう
+
+- バネ定数 `k` を大きくすると振動が速く、小さいとゆっくりに
+- 振り子を真横（90°）まで引っ張ると大振幅の非線形な動きが見られます
+- 減衰を `1.0` にすると永遠に止まりません
+- 振り子の長さ `pendLen` を短くすると周期が短くなります
+
+</div>
