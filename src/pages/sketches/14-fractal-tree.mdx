@@ -1,0 +1,91 @@
+---
+layout: ../../layouts/Layout.astro
+title: "フラクタル樹木"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="fractal-tree" />
+
+<div class="article-content">
+
+## フラクタル樹木
+
+再帰関数を使って枝分かれする木を描画します。**クリックで基本の樹木 → 風で揺れる → 桜の木に切り替え**できます。
+
+## 再帰で木を描く基本
+
+フラクタル樹木の核心は「自分自身を呼ぶ関数（再帰）」です。1 本の枝の先から 2 本の枝を伸ばし、そのそれぞれの先からさらに 2 本…を繰り返します。
+
+```js
+function drawTree(x, y, angle, len, depth) {
+  if (depth <= 0) return; // 再帰の終了条件
+
+  const x2 = x + cos(angle) * len;
+  const y2 = y + sin(angle) * len;
+  line(x, y, x2, y2);
+
+  const spread = PI / 5.5;    // 枝の広がり角度
+  const newLen = len * 0.67;   // 枝の縮小率
+
+  drawTree(x2, y2, angle - spread, newLen, depth - 1);
+  drawTree(x2, y2, angle + spread, newLen, depth - 1);
+}
+```
+
+| パラメータ | 効果 |
+|---|---|
+| `depth` | 再帰の深さ。増やすと枝が細かくなる |
+| `spread` | 枝の広がり角度。大きいほど横に広がる |
+| `len * 0.67` | 縮小率。1 に近いと長い枝、小さいと短い枝 |
+
+## 風で揺れる木
+
+Perlin ノイズ `noise()` を使って枝の角度を揺らすことで、風に揺れる木を表現します。
+
+```js
+function drawWindTree(x, y, angle, len, depth, noiseIdx) {
+  const wind = (noise(noiseIdx * 0.15, windTime) - 0.5) * 0.5;
+  const a = angle + wind * (1 - depth / 10);
+  // ... 同様に枝を描画
+}
+```
+
+- `noiseIdx` が枝ごとに異なるため、各枝が独立して揺れる
+- `windTime` を毎フレーム増やすことで時間変化する風を表現
+- `(1 - depth / 10)` で根に近い太い枝ほど揺れにくくする
+
+## 桜の木
+
+枝先に花びらを配置することで桜の木を表現します。再帰の浅い層（`depth <= 3`）で花を描画します。
+
+```js
+if (depth <= 3) {
+  const numPetals = 6;
+  for (let i = 0; i < numPetals; i++) {
+    const petalAngle = (TWO_PI / numPetals) * i;
+    const px = x2 + cos(petalAngle) * 7;
+    const py = y2 + sin(petalAngle) * 7;
+    fill(255, 190, 200, 200);
+    circle(px, py, 6);
+  }
+  fill(255, 230, 100); // 黄色の花芯
+  circle(x2, y2, 3);
+}
+```
+
+### ポイント
+
+1. **再帰関数** — 自分自身を呼ぶことで複雑な構造をシンプルなコードで表現
+2. **終了条件が重要** — `depth <= 0` がないと無限ループになる
+3. **ノイズで自然な動き** — `random()` よりも `noise()` のほうが滑らかで自然
+4. **太さの変化** — 深さに応じて `strokeWeight` を変えるとリアルな木になる
+
+## 試してみよう
+
+- `spread` の値を `PI / 3` や `PI / 8` に変えて形の変化を観察しましょう
+- 枝を 3 本に分岐させてみましょう（`drawTree` を 3 回呼ぶ）
+- `depth` を増やすとどうなりますか？（計算量は `2^depth` で増えます）
+- 各枝の長さや角度にランダムさを加えて、より自然な木を作ってみましょう
+
+</div>

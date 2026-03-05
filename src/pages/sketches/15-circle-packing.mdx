@@ -1,0 +1,106 @@
+---
+layout: ../../layouts/Layout.astro
+title: "円パッキング"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="circle-packing" />
+
+<div class="article-content">
+
+## 円パッキング
+
+重ならないように円を敷き詰めるアルゴリズムです。**クリックでランダムパッキング → 画像ベース → インタラクティブに切り替え**できます。インタラクティブモードではキャンバスをクリックして円を追加、バー部分で切替です。
+
+## 基本アルゴリズム
+
+円パッキングは 3 つのステップで構成されます。
+
+```js
+// 1. ランダムな位置を試す
+const x = random(width);
+const y = random(height);
+
+// 2. 既存の円と重なるかチェック
+let overlapping = false;
+for (const c of circles) {
+  if (dist(x, y, c.x, c.y) < c.r + newRadius) {
+    overlapping = true;
+    break;
+  }
+}
+
+// 3. 重ならなければ追加
+if (!overlapping) {
+  circles.push({ x, y, r: newRadius, growing: true });
+}
+```
+
+## 成長ロジック
+
+円を追加した後、毎フレーム半径を少しずつ大きくします。他の円にぶつかるか、画面端に達したら成長を止めます。
+
+```js
+for (const c of circles) {
+  if (!c.growing) continue;
+  c.r += 0.5;
+
+  // 画面端チェック
+  if (c.x - c.r < 0 || c.x + c.r > width) {
+    c.growing = false;
+    continue;
+  }
+
+  // 他の円との衝突チェック
+  for (const other of circles) {
+    if (c === other) continue;
+    if (dist(c.x, c.y, other.x, other.y) < c.r + other.r) {
+      c.growing = false;
+      break;
+    }
+  }
+}
+```
+
+| 要素 | 役割 |
+|---|---|
+| `growing` フラグ | 成長中かどうかを管理 |
+| `c.r += 0.5` | 1 フレームあたりの成長量 |
+| `dist()` | 2 点間の距離で衝突判定 |
+
+## 画像ベースのパッキング
+
+グラフィックスバッファに描いたパターンの明るさに基づいて、円のサイズや配置を変えます。
+
+```js
+// パターン画像を作成
+const pg = createGraphics(width, height);
+pg.textSize(180);
+pg.text("p5", width / 2, height / 2);
+pg.loadPixels();
+
+// 明るい場所にのみ円を配置
+const brightness = pg.pixels[(y * width + x) * 4];
+if (brightness > 128) {
+  // 明るいほど大きな円を許容
+  const maxR = map(brightness, 128, 255, 8, 30);
+  circles.push({ x, y, r: 2, maxR, growing: true });
+}
+```
+
+### ポイント
+
+1. **衝突判定** — `dist(a, b) < r1 + r2` が円同士の重なり判定の基本
+2. **成長アニメーション** — 最初は小さく生成し、毎フレーム大きくすることで有機的な動き
+3. **試行回数の上限** — 配置不可能になったら停止し、無限ループを防ぐ
+4. **画像サンプリング** — `loadPixels()` でピクセルデータにアクセスし、パターンに沿って配置
+
+## 試してみよう
+
+- 成長速度 `c.r += 0.5` を変えてアニメーションの印象の違いを見ましょう
+- 初期半径を変えて最小円のサイズを調整してみましょう
+- 衝突判定にマージン（余白）を加えて、円同士の間隔を空けてみましょう
+- 色をランダムではなく位置に基づいて決めるとどうなりますか？
+
+</div>
