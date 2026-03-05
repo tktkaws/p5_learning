@@ -1,0 +1,114 @@
+---
+layout: ../../layouts/Layout.astro
+title: "群れシミュレーション（Boids）"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="boids" />
+
+<div class="article-content">
+
+## 群れシミュレーション（Boids）
+
+鳥や魚の群れのような集団行動を、たった 3 つのシンプルなルールで再現します。**クリックで鳥を追加**できます。
+
+## Boids アルゴリズムとは
+
+1986 年に Craig Reynolds が提案したアルゴリズムで、各個体（Boid）が 3 つのルールだけに従うことで、群れ全体として自然な動きが生まれます。
+
+```
+[分離] 近すぎる仲間から離れる
+[整列] 周囲の仲間と同じ方向に進む
+[結合] 周囲の仲間の中心に向かう
+```
+
+## 3 つのルール
+
+### 1. 分離（Separation）
+
+近くの仲間に近づきすぎないように離れる力です。
+
+```js
+// 25px 以内の仲間から遠ざかる方向を計算
+if (d < 25 && d > 0) {
+  sepX += dx / (d * d); // 距離の2乗に反比例
+  sepY += dy / (d * d);
+}
+```
+
+距離の 2 乗で割ることで、**近いほど強く反発**します。
+
+### 2. 整列（Alignment）
+
+周囲の仲間の平均速度に合わせる力です。
+
+```js
+// 50px 以内の仲間の速度を平均
+if (d < 50) {
+  aliX += other.vx;
+  aliY += other.vy;
+}
+// 平均を求めて目標速度にする
+aliX /= count;
+aliY /= count;
+```
+
+### 3. 結合（Cohesion）
+
+周囲の仲間の中心に向かう力です。
+
+```js
+// 50px 以内の仲間の位置を平均 → 中心を求める
+cohX = cohX / count - this.x;
+cohY = cohY / count - this.y;
+```
+
+## ステアリング（操舵力）
+
+各ルールの結果を「目標速度」として、現在の速度との差分を**操舵力**として加えます。
+
+```js
+// 目標速度と現在の速度の差 = 操舵力
+let sx = (targetX / mag) * maxSpeed - this.vx;
+let sy = (targetY / mag) * maxSpeed - this.vy;
+// 力の大きさを制限（急に曲がりすぎない）
+if (sm > maxForce) {
+  sx = (sx / sm) * maxForce;
+  sy = (sy / sm) * maxForce;
+}
+```
+
+`maxForce` で力を制限するため、滑らかに方向転換します。
+
+## 重み付け
+
+3 つの力にそれぞれ重みを付けて最終的な加速度を決めます。
+
+```js
+ax += sepX * 1.5; // 分離を少し強めに
+ax += aliX * 1.0; // 整列
+ax += cohX * 1.0; // 結合
+```
+
+分離を強くすると散らばり、結合を強くすると密集します。
+
+## 端の処理（ラップアラウンド）
+
+画面の端を超えたら反対側から出てくるようにします。
+
+```js
+if (this.x > width) this.x = 0;
+if (this.x < 0) this.x = width;
+if (this.y > height) this.y = 0;
+if (this.y < 0) this.y = height;
+```
+
+## 試してみよう
+
+- 分離の重み `1.5` を `3.0` にすると、群れがバラバラに
+- 結合の重み `1.0` を `3.0` にすると、ギュッと固まる
+- `maxForce` を大きくすると急旋回、小さくすると緩やかなカーブに
+- 認識範囲 `50` を広げると大きな群れ、狭めると小グループに分かれます
+
+</div>
