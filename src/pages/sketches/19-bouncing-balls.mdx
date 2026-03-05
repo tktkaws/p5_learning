@@ -1,0 +1,112 @@
+---
+layout: ../../layouts/Layout.astro
+title: "衝突する球"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="bouncing-balls" />
+
+<div class="article-content">
+
+## 衝突する球
+
+複数の球が壁と互いに弾性衝突します。**クリックで球を追加**できます。大きい球ほど重く、衝突時の影響が大きくなります。
+
+## 円同士の衝突検出
+
+2 つの円が重なっているかは、中心間の距離と半径の和を比べるだけです。
+
+```js
+const dx = b2.x - b1.x;
+const dy = b2.y - b1.y;
+const dist = sqrt(dx * dx + dy * dy);
+const minDist = b1.r + b2.r;
+
+if (dist < minDist) {
+  // 衝突している！
+}
+```
+
+## 弾性衝突の物理
+
+弾性衝突では**運動量**と**運動エネルギー**の両方が保存されます。
+
+```
+運動量保存:   m1×v1 + m2×v2 = m1×v1' + m2×v2'
+エネルギー保存: ½m1×v1² + ½m2×v2² = ½m1×v1'² + ½m2×v2'²
+```
+
+### 法線方向の処理
+
+衝突は 2 つの球を結ぶ線（法線方向）に沿って処理します。
+
+```js
+// 法線ベクトル（単位ベクトル）
+const nx = dx / dist;
+const ny = dy / dist;
+
+// 法線方向の相対速度
+const dvx = b1.vx - b2.vx;
+const dvy = b1.vy - b2.vy;
+const dvn = dvx * nx + dvy * ny;
+```
+
+### インパルス（撃力）の計算
+
+```js
+// 弾性衝突のインパルス
+const impulse = (2 * dvn) / (b1.mass + b2.mass);
+
+b1.vx -= impulse * b2.mass * nx;
+b1.vy -= impulse * b2.mass * ny;
+b2.vx += impulse * b1.mass * nx;
+b2.vy += impulse * b1.mass * ny;
+```
+
+質量が大きい球ほど速度の変化が小さく、小さい球は大きく弾かれます。
+
+## めり込み解消
+
+衝突判定は離散的（毎フレーム）なので、球が重なった状態で検出されます。そのまま放置すると球がくっついてしまうため、重なりを解消します。
+
+```js
+const overlap = minDist - dist;
+const totalMass = b1.mass + b2.mass;
+
+// 質量に応じて押し戻す（重い方は動きにくい）
+b1.x -= (nx * overlap * b2.mass) / totalMass;
+b1.y -= (ny * overlap * b2.mass) / totalMass;
+b2.x += (nx * overlap * b1.mass) / totalMass;
+b2.y += (ny * overlap * b1.mass) / totalMass;
+```
+
+## 壁との衝突
+
+壁は単純に速度を反転して位置を補正します。
+
+```js
+if (this.x - this.r < 0) {
+  this.x = this.r;     // めり込み補正
+  this.vx *= -1;       // 速度反転
+}
+```
+
+## 質量の設定
+
+質量は半径の 2 乗に比例させています（面積比）。
+
+```js
+this.mass = r * r;
+```
+
+大きい球は重く、小さい球は軽い。衝突すると大きい球はほとんど動かず、小さい球が弾き飛ばされます。
+
+## 試してみよう
+
+- 大きさの異なる球を追加して、質量差による衝突の違いを観察しましょう
+- 初期速度 `p.random(1, 3)` を大きくするとスピーディな動きに
+- `resolveCollision` で `impulse` の計算式を変えると非弾性衝突にできます
+- 重力を追加して `this.vy += 0.1` とすると球が落下します
+
+</div>
