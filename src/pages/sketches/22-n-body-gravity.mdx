@@ -1,0 +1,99 @@
+---
+layout: ../../layouts/Layout.astro
+title: "重力多体問題"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="n-body-gravity" />
+
+<div class="article-content">
+
+## 重力多体問題
+
+複数の天体が万有引力で互いに引き合う N 体シミュレーションです。**クリックで天体を追加**、**ダブルクリックでリセット**できます。
+
+## 万有引力の法則
+
+2 つの天体間の引力は、質量の積に比例し、距離の 2 乗に反比例します。
+
+```
+F = G × m1 × m2 / r²
+```
+
+```js
+const dx = b.x - a.x;
+const dy = b.y - a.y;
+const distSq = dx * dx + dy * dy + softening * softening;
+const dist = sqrt(distSq);
+const force = (G * a.mass * b.mass) / distSq;
+
+// 力を方向に分解
+const fx = (force * dx) / dist;
+const fy = (force * dy) / dist;
+```
+
+## ソフトニング
+
+天体が非常に近づくと力が無限大に発散します。これを防ぐために「ソフトニング長」を加えます。
+
+```js
+const distSq = dx * dx + dy * dy + SOFTENING * SOFTENING;
+```
+
+`SOFTENING` が大きいほど近距離の力が弱まり、シミュレーションが安定します。
+
+## N 体のペアワイズ計算
+
+N 個の天体すべてのペアで力を計算します。ニュートンの第三法則（作用・反作用）を使い、各ペアを 1 回だけ計算します。
+
+```js
+for (let i = 0; i < bodies.length; i++) {
+  for (let j = i + 1; j < bodies.length; j++) {
+    // i と j 間の引力を計算
+    a.applyForce(fx, fy);
+    b.applyForce(-fx, -fy); // 反作用
+  }
+}
+```
+
+計算量は O(N²) で、天体が増えると急激に重くなります。
+
+## 軌道の予測不能性
+
+2 体問題（太陽と惑星）は解析的に解けますが、3 体以上は一般解がありません。初期条件のわずかな違いで軌道がまったく変わる**カオス的な振る舞い**を示します。
+
+## 円軌道の初速度
+
+周回天体の初速度は、中心天体の質量と距離から円軌道の速さを求めて設定しています。
+
+```js
+const orbitalSpeed = sqrt((G * centralMass) / distance);
+// 接線方向に初速度を設定
+const vx = -sin(angle) * orbitalSpeed;
+const vy = cos(angle) * orbitalSpeed;
+```
+
+完全な円軌道にはならず、他の天体の引力で徐々に崩れていきます。
+
+## 軌跡の描画
+
+各天体の過去の位置を配列に保存し、古いほど透明にして描画します。
+
+```js
+this.trail.push({ x: this.x, y: this.y });
+if (this.trail.length > TRAIL_LEN) {
+  this.trail.shift();
+}
+```
+
+軌跡があることで、天体がどのような経路を辿ったかが一目で分かります。
+
+## 試してみよう
+
+- クリックで天体を追加し、混沌とした軌道を観察しましょう
+- 中心天体の質量 `40` を大きくすると安定した軌道に近づきます
+- `G` を大きくすると引力が強くなり、激しい動きに
+- `SOFTENING` を 0 に近づけると近接時の加速が激しくなります
+
+</div>
