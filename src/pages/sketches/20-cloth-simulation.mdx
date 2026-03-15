@@ -1,0 +1,94 @@
+---
+layout: ../../layouts/Layout.astro
+title: "布シミュレーション"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="cloth-simulation" />
+
+<div class="article-content">
+
+## 布シミュレーション
+
+点とバネの格子で布を表現しています。上辺が固定され、重力で自然に垂れ下がります。**ドラッグで布をつかんで引っ張る**ことができます。
+
+## Verlet 積分
+
+通常のオイラー法（位置 += 速度）の代わりに、Verlet 積分を使います。速度を明示的に持たず、「前の位置」と「現在の位置」の差から動きを計算します。
+
+```js
+// 速度 = 現在の位置 - 前の位置
+const vx = (pt.x - pt.oldX) * damping;
+const vy = (pt.y - pt.oldY) * damping;
+
+// 前の位置を更新
+pt.oldX = pt.x;
+pt.oldY = pt.y;
+
+// 新しい位置 = 現在 + 速度 + 加速度
+pt.x += vx;
+pt.y += vy + gravity;
+```
+
+Verlet 積分は安定性が高く、布や紐のシミュレーションでよく使われます。
+
+## 距離制約（バネ）
+
+隣り合う 2 点の距離が自然長からずれたら、互いに近づける（または遠ざける）ことでバネを表現します。
+
+```js
+const dx = b.x - a.x;
+const dy = b.y - a.y;
+const dist = sqrt(dx * dx + dy * dy);
+const diff = (dist - restLen) / dist * stiffness;
+
+// 半分ずつ補正
+a.x += dx * diff * 0.5;
+a.y += dy * diff * 0.5;
+b.x -= dx * diff * 0.5;
+b.y -= dy * diff * 0.5;
+```
+
+## 反復回数が重要
+
+制約の解決を 1 回だけ行うと、1 つの制約を直すと別の制約がずれます。そのため **複数回反復** して精度を上げます。
+
+```js
+for (let i = 0; i < iterations; i++) {
+  for (const c of constraints) {
+    solveConstraint(c);
+  }
+}
+```
+
+反復回数が多いほど布が硬くなり、少ないとゴムのように伸びます。
+
+## 固定点（ピン）
+
+上辺の点は `pinned = true` として、位置を更新しないようにします。
+
+```js
+if (pt.pinned) continue; // 固定点はスキップ
+```
+
+これにより布が吊り下がった状態を保てます。
+
+## 三角メッシュ描画
+
+格子の各セルを 2 つの三角形に分割して描画すると、面として見えます。
+
+```js
+// 4つの点 a, b, c, d で2つの三角形
+triangle(a.x, a.y, b.x, b.y, c.x, c.y);
+triangle(b.x, b.y, d.x, d.y, c.x, c.y);
+```
+
+## 試してみよう
+
+- 格子サイズ `cols`, `rows` を変えると布のきめ細かさが変化します
+- `gravity` を大きくすると重く垂れ下がります
+- `stiffness` を 1.0 に近づけると硬い布、0.1 にするとゆるゆるに
+- `iterations` を 1 にすると伸びやすい布、10 にするとしっかりした布になります
+
+</div>
