@@ -1,0 +1,130 @@
+---
+layout: ../../layouts/Layout.astro
+title: "パーティクルテキスト"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="particle-text" />
+
+<div class="article-content">
+
+## パーティクルテキスト
+
+テキストをピクセル単位で解析し、文字の形に粒子を配置します。クリックで**散らばり⇔集合**のアニメーションが切り替わります。
+
+### 操作方法
+
+| 操作 | 動作 |
+|------|------|
+| キャンバスをクリック | 散らばり ⇔ 集合を切り替え |
+
+## テキストのピクセル解析
+
+文字の形を粒子で再現するため、まずオフスクリーンにテキストを描画し、ピクセルを調べます。
+
+```js
+// オフスクリーンバッファを作成
+const pg = p.createGraphics(p.width, p.height);
+pg.pixelDensity(1);
+pg.background(0);      // 黒背景
+pg.fill(255);           // 白文字
+pg.textSize(80);
+pg.textAlign(p.CENTER, p.CENTER);
+pg.text("p5.js", pg.width / 2, pg.height / 2);
+pg.loadPixels();        // ピクセルデータを読み込み
+```
+
+`createGraphics()` で見えないキャンバスを作り、そこに白文字を描きます。`loadPixels()` を呼ぶと `pg.pixels` 配列でピクセルデータにアクセスできます。
+
+## ピクセルのサンプリング
+
+全ピクセルに粒子を置くと重くなるため、一定間隔でサンプリングします。
+
+```js
+const SAMPLE_STEP = 4; // 4ピクセルごとにチェック
+
+for (let y = 0; y < pg.height; y += SAMPLE_STEP) {
+  for (let x = 0; x < pg.width; x += SAMPLE_STEP) {
+    const i = (y * pg.width + x) * 4; // RGBA なので ×4
+    const brightness = pg.pixels[i];   // R チャネルで判定
+
+    if (brightness > 128) {
+      // このピクセルは文字の一部 → 粒子を作成
+      particles.push(new Particle(x, y));
+    }
+  }
+}
+```
+
+### pixels 配列の構造
+
+`pixels` は1次元配列で、各ピクセルが **RGBA の 4 要素**を持ちます。
+
+```
+pixels[0] = R, pixels[1] = G, pixels[2] = B, pixels[3] = A  ← (0,0)
+pixels[4] = R, pixels[5] = G, pixels[6] = B, pixels[7] = A  ← (1,0)
+...
+```
+
+座標 `(x, y)` のインデックスは `(y * width + x) * 4` で計算します。
+
+## イージングによるアニメーション
+
+粒子は目標位置に向かってバネ的な動きをします。
+
+```js
+update() {
+  const force = target.copy().sub(this.pos);
+  force.mult(0.08);       // イージング係数（小さいほどゆっくり）
+  this.vel.add(force);
+  this.vel.mult(0.85);    // 減衰（摩擦）
+  this.pos.add(this.vel);
+}
+```
+
+この仕組みは「**イージング + 減衰**」パターンです：
+
+1. **目標との差分**をバネの力として計算
+2. **イージング係数**で力の強さを調整（0.08 = ゆるやかに近づく）
+3. **減衰**で速度を毎フレーム 85% に抑え、オーバーシュートを防ぐ
+
+## 散らばり⇔集合の切り替え
+
+クリックで `scattered` フラグをトグルし、粒子の目標位置を切り替えます。
+
+```js
+p.mousePressed = () => {
+  scattered = !scattered;
+
+  if (scattered) {
+    // 散らばり: 各粒子にランダムな目標を設定
+    for (const particle of particles) {
+      particle.randomTarget = p.createVector(
+        p.random(p.width),
+        p.random(p.height)
+      );
+    }
+  }
+  // 集合: particle.target（文字の位置）に向かう
+};
+```
+
+散らばり時はランダムな座標、集合時はテキストのピクセル座標が目標になります。
+
+## pixelDensity の注意点
+
+Retina ディスプレイでは `pixelDensity()` がデフォルトで 2 になり、ピクセル数が 4 倍になります。ピクセル解析では `pixelDensity(1)` を指定して、座標とピクセルの対応を一致させます。
+
+```js
+pg.pixelDensity(1); // 重要: 座標とピクセルを1:1に
+```
+
+## 試してみよう
+
+- `SAMPLE_STEP` を変えて粒子の密度を調整してみましょう（2 で高密度、8 で粗い）
+- `createInput()` を追加して、入力したテキストで粒子を再生成してみましょう
+- マウスに近い粒子だけ逃げる「反発」効果を追加してみましょう
+- 粒子のサイズを速度に応じて変えてみましょう（速いほど小さい等）
+
+</div>
