@@ -1,0 +1,121 @@
+---
+layout: ../../layouts/Layout.astro
+title: "スライダーで制御"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="slider-control" />
+
+<div class="article-content">
+
+## スライダーで制御
+
+`createSlider()` を使って、スケッチのパラメータをリアルタイムに操作します。p5.js の **DOM 要素連携**の基本を学びます。
+
+### 操作方法
+
+| スライダー | 効果 |
+|-----------|------|
+| 図形の数 | 放射状に配置する正多角形の個数（3〜20） |
+| サイズ | 各図形の大きさ |
+| 色相 | ベースとなる HSB 色相（0〜360） |
+| 回転速度 | 全体の回転スピード |
+
+## createSlider() の基本
+
+`createSlider(min, max, value, step)` で HTML の `<input type="range">` を作成します。
+
+```js
+// 0〜360の範囲、初期値200、ステップ1のスライダー
+let slider = p.createSlider(0, 360, 200, 1);
+```
+
+`.value()` で現在の値を取得できます。
+
+```js
+p.draw = () => {
+  const hue = slider.value(); // 毎フレーム最新の値を取得
+  p.fill(hue, 70, 90);
+  p.circle(200, 200, 100);
+};
+```
+
+## DOM 要素の配置
+
+p5.js の DOM 要素はデフォルトでキャンバスの親要素に追加されます。`.parent()` で配置先を指定できます。
+
+```js
+// コンテナを作ってスライダーをまとめる
+const controls = p.createDiv();
+controls.style("display", "flex");
+controls.style("flex-direction", "column");
+controls.style("gap", "0.4rem");
+
+const slider = p.createSlider(0, 100, 50, 1);
+slider.parent(controls); // controls の中に配置
+```
+
+## ラベル付きスライダーの作り方
+
+スライダー単体では何を操作しているかわかりません。ラベルと現在値の表示を組み合わせます。
+
+```js
+function makeSlider(label, min, max, value, step) {
+  const wrap = p.createDiv();
+  wrap.style("display", "flex");
+  wrap.style("align-items", "center");
+  wrap.style("gap", "0.5rem");
+
+  const lbl = p.createSpan(label);
+  lbl.parent(wrap);
+
+  const slider = p.createSlider(min, max, value, step);
+  slider.parent(wrap);
+
+  const val = p.createSpan(String(value));
+  val.parent(wrap);
+
+  // スライダー操作時に値の表示を更新
+  slider.input(() => val.html(String(slider.value())));
+
+  return { wrap, slider };
+}
+```
+
+`slider.input()` は値が変わるたびに呼ばれるコールバックを登録します。`slider.changed()` と異なり、ドラッグ中もリアルタイムに発火します。
+
+## DOM 要素のスタイリング
+
+`.style()` メソッドで CSS プロパティを設定できます。
+
+```js
+wrap.style("display", "flex");
+wrap.style("font-size", "13px");
+slider.style("flex", "1");
+```
+
+p5.js の DOM 要素は通常の HTML 要素なので、CSS のプロパティがそのまま使えます。
+
+## その他の DOM 要素
+
+`createSlider()` 以外にも便利な DOM 要素作成関数があります。
+
+| 関数 | 作成される要素 |
+|------|--------------|
+| `createSlider()` | `<input type="range">` |
+| `createButton()` | `<button>` |
+| `createCheckbox()` | `<input type="checkbox">` |
+| `createSelect()` | `<select>` |
+| `createInput()` | `<input type="text">` |
+| `createDiv()` | `<div>` |
+| `createSpan()` | `<span>` |
+
+## 試してみよう
+
+- ボタンを追加して、クリックでパラメータをランダムに変える機能を作ってみましょう
+- `createSelect()` で図形の種類（円・四角・星）を切り替えられるようにしてみましょう
+- `createCheckbox()` で接続線のオン/オフを切り替えてみましょう
+- スライダーの値を `localStorage` に保存して、リロード後も復元されるようにしてみましょう
+
+</div>
