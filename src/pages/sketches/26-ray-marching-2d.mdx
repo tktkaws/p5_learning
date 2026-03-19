@@ -1,0 +1,169 @@
+---
+layout: ../../layouts/Layout.astro
+title: "レイマーチング2D"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="ray-marching-2d" />
+
+<div class="article-content">
+
+## レイマーチング2D
+
+**SDF（符号付き距離関数）** を使って 2D 空間のオブジェクトを描画します。マウスで光源を動かすと、**ソフトシャドウ**・**グロー**・**等高線**がリアルタイムに変化します。
+
+### 操作方法
+
+| 操作 | 動作 |
+|------|------|
+| マウス移動 | 光源の位置を変更 |
+
+## SDF（符号付き距離関数）とは
+
+SDF は空間上の任意の点から**最も近い表面までの距離**を返す関数です。符号で内外を区別します。
+
+```
+d > 0  →  オブジェクトの外側（正の距離）
+d = 0  →  オブジェクトの境界（表面）
+d < 0  →  オブジェクトの内側（負の距離）
+```
+
+この距離情報だけで、形状の描画・ライティング・シャドウまでを実現できます。
+
+## SDF プリミティブ
+
+### 円の SDF
+
+最もシンプルなプリミティブ。中心からの距離から半径を引くだけです。
+
+```js
+function sdCircle(px, py, cx, cy, r) {
+  const dx = px - cx, dy = py - cy;
+  return Math.sqrt(dx * dx + dy * dy) - r;
+}
+```
+
+### 矩形の SDF
+
+軸揃え矩形（AABB）の距離関数です。角丸の半径を足せば角丸矩形にもなります。
+
+```js
+function sdBox(px, py, cx, cy, hw, hh) {
+  const dx = Math.abs(px - cx) - hw;
+  const dy = Math.abs(py - cy) - hh;
+  return Math.sqrt(Math.max(dx, 0) ** 2 + Math.max(dy, 0) ** 2)
+       + Math.min(Math.max(dx, dy), 0);
+}
+```
+
+`hw`, `hh` は半幅・半高さです。`Math.abs` で座標を第一象限に折り返し、対称性を利用しています。
+
+## CSG 演算（形状の合成）
+
+SDF の最大の強みは、シンプルな数式で形状を合成できることです。
+
+```js
+// 和（Union）: 2つの形状を合体
+function opUnion(a, b) { return Math.min(a, b); }
+
+// 差（Subtraction）: a から b をくり抜く
+function opSubtract(a, b) { return Math.max(a, -b); }
+
+// スムース和: 滑らかに結合（k が丸み量）
+function opSmoothUnion(a, b, k) {
+  const h = Math.max(k - Math.abs(a - b), 0) / k;
+  return Math.min(a, b) - h * h * k * 0.25;
+}
+```
+
+このスケッチでは、**円と矩形をスムース和**で滑らかに結合し、**移動する穴を差（Subtraction）** でくり抜いています。
+
+## 法線の推定
+
+ライティングには**法線**（表面の向き）が必要です。SDF では**中心差分**で数値的に推定します。
+
+```js
+function getNormal(x, y, t) {
+  const e = 0.5;
+  const nx = scene(x + e, y, t) - scene(x - e, y, t);
+  const ny = scene(x, y + e, t) - scene(x, y - e, t);
+  const len = Math.sqrt(nx * nx + ny * ny) || 1;
+  return [nx / len, ny / len];
+}
+```
+
+微小量 `e` だけずらした 2 点の SDF 値の差が、その方向の勾配になります。これを正規化すると法線ベクトルが得られます。
+
+## ソフトシャドウ
+
+SDF を使ったシャドウは「レイマーチング」の核心です。表面から光源に向かってレイを飛ばし、途中で別のオブジェクトに当たるかを SDF で効率的に判定します。
+
+```js
+function softShadow(ox, oy, lx, ly, k, t, maxSteps) {
+  let dx = lx - ox, dy = ly - oy;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  dx /= dist; dy /= dist;
+
+  let res = 1, s = 2;
+  for (let i = 0; i < maxSteps && s < dist; i++) {
+    const d = scene(ox + dx * s, oy + dy * s, t);
+    if (d < 0.5) return 0;           // 完全に影
+    res = Math.min(res, k * d / s);  // 半影の計算
+    s += Math.max(d, 1);             // SDF 値分だけスキップ
+  }
+  return Math.max(res, 0);
+}
+```
+
+### ポイント
+
+- **SDF 値分スキップ**: 距離 `d` の分だけ安全に進めます。これがレイマーチングの効率の源です
+- **半影（ペナンブラ）**: `k * d / s` でオブジェクトへの「ニアミス度」を追跡し、柔らかい影の境界を作ります
+- `k` が大きいほどシャープな影、小さいほどソフトな影になります
+
+## グローと等高線
+
+### グロー（エッジ発光）
+
+オブジェクト表面付近で指数関数的に明るくなるエフェクトです。
+
+```js
+const glow = Math.exp(-d * 0.07);
+```
+
+距離 `d` が 0 に近いほど `glow` は 1 に近づき、離れるほど急速に減衰します。
+
+### 等高線（距離フィールドの可視化）
+
+`cos` 関数で距離に応じた縞模様を描くと、SDF の「等高線」が見えます。
+
+```js
+const spacing = 8;
+const contour = (0.5 + 0.5 * Math.cos(d / spacing * Math.PI * 2))
+              * Math.exp(-d * 0.02);
+```
+
+`spacing` は等高線の間隔（ピクセル単位）で、遠くなるほど減衰させて自然に消えるようにしています。
+
+## パフォーマンス最適化
+
+全ピクセルで SDF を評価するため、解像度を 200x200 に抑えて 400x400 に拡大表示しています。
+
+```js
+pg = p.createGraphics(200, 200);
+pg.pixelDensity(1);
+// ... ピクセル単位で計算 ...
+p.image(pg, 0, 0, 400, 400); // 2倍に拡大
+```
+
+さらに、シャドウ計算はオブジェクト近傍（距離 40 以内）に限定し、遠い背景では省略しています。
+
+## 試してみよう
+
+- `opSmoothUnion` の `k` 値を変えて、結合の滑らかさを調整してみましょう
+- 新しいプリミティブ（三角形、カプセル等）を追加してみましょう
+- `opSubtract` の穴の動き方を変えて（軌道を楕円やリサージュに）みましょう
+- 等高線の `spacing` を変えて密度を調整してみましょう
+
+</div>
