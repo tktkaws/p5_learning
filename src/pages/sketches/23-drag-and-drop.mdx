@@ -1,0 +1,106 @@
+---
+layout: ../../layouts/Layout.astro
+title: "ドラッグ＆ドロップ"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="drag-and-drop" />
+
+<div class="article-content">
+
+## ドラッグ＆ドロップ
+
+オブジェクトをマウスでつかんで移動する、インタラクションの基本パターンです。**当たり判定**と**ドラッグ状態管理**の仕組みを学びます。
+
+### 操作方法
+
+| 操作 | 動作 |
+|------|------|
+| 円をクリック＆ドラッグ | 円を移動 |
+| ドラッグ中 | つかんだ円が最前面に表示される |
+
+## 当たり判定（ヒットテスト）
+
+円の中をクリックしたかどうかは、**マウス位置と円の中心の距離**で判定します。
+
+```js
+contains(mx, my) {
+  return p.dist(mx, my, this.x, this.y) < this.r;
+}
+```
+
+`p.dist()` で2点間の距離を計算し、円の半径 `this.r` より小さければ「円の中にいる」と判定できます。
+
+## ドラッグ状態の管理
+
+ドラッグには3つのイベントを組み合わせます。
+
+```js
+// 1. mousePressed: つかむ
+p.mousePressed = () => {
+  for (let i = circles.length - 1; i >= 0; i--) {
+    if (circles[i].contains(p.mouseX, p.mouseY)) {
+      dragged = circles[i];
+      offsetX = dragged.x - p.mouseX;
+      offsetY = dragged.y - p.mouseY;
+      break;
+    }
+  }
+};
+
+// 2. mouseDragged: 移動
+p.mouseDragged = () => {
+  if (!dragged) return;
+  dragged.x = p.mouseX + offsetX;
+  dragged.y = p.mouseY + offsetY;
+};
+
+// 3. mouseReleased: 離す
+p.mouseReleased = () => {
+  dragged = null;
+};
+```
+
+### オフセットの重要性
+
+クリック位置と円の中心は通常ズレています。**オフセット**を記録しないと、ドラッグ開始時に円の中心がマウスに飛びつく不自然な動きになります。
+
+```js
+// クリック時にオフセットを記録
+offsetX = dragged.x - p.mouseX;
+offsetY = dragged.y - p.mouseY;
+
+// ドラッグ中はオフセットを足して位置を更新
+dragged.x = p.mouseX + offsetX;
+```
+
+## Z順序（描画順）の制御
+
+配列の**後ろにある要素ほど上に描画**されます。つかんだ円を配列の末尾に移動することで、最前面に表示できます。
+
+```js
+// つかんだ円を配列末尾へ移動
+circles.splice(i, 1);   // 元の位置から削除
+circles.push(dragged);   // 末尾に追加
+```
+
+`splice(i, 1)` でインデックス `i` の要素を1つ削除し、`push()` で末尾に追加します。
+
+## キャンバス外への移動防止
+
+`p.constrain()` を使って、円がキャンバスの外に出ないように制限しています。
+
+```js
+dragged.x = p.constrain(p.mouseX + offsetX, dragged.r, p.width - dragged.r);
+dragged.y = p.constrain(p.mouseY + offsetY, dragged.r, p.height - dragged.r);
+```
+
+## 試してみよう
+
+- 円の上にホバーしたときにカーソルを変えてみましょう（`p.cursor(p.HAND)` / `p.cursor(p.ARROW)`）
+- ダブルクリックで新しい円を追加する機能を作ってみましょう
+- 四角形のドラッグを実装してみましょう（当たり判定が `dist()` ではなく範囲チェックになります）
+- ドラッグ中の円にアニメーション（拡大・色変化）を付けてみましょう
+
+</div>
