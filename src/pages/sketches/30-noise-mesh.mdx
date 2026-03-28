@@ -1,0 +1,85 @@
+---
+layout: ../../layouts/Layout.astro
+title: "ノイズによるメッシュ変形"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="noise-mesh" />
+
+<div class="article-content">
+
+## ノイズによるメッシュ変形
+
+**Perlin ノイズ**でグリッドの頂点を揺らし、有機的に波打つワイヤーフレームメッシュを描画します。ノイズの第 3 引数に時間を渡すことで、メッシュが絶えず変化し続けます。
+
+### 操作方法
+
+| 操作 | 動作 |
+|------|------|
+| マウス移動 | マウス付近のメッシュが盛り上がる |
+| クリック | クリック地点から波紋が広がる |
+
+## 仕組み
+
+### 1. グリッドの頂点にノイズで高さを与える
+
+`noise(col, row, time)` で各頂点の「高さ」を計算します。時間軸を加えることで、メッシュが滑らかにアニメーションします。
+
+```js
+let h = noise(col * scale, row * scale, time) * amplitude;
+```
+
+`scale` はノイズの周波数、`amplitude` は変位の大きさを制御します。
+
+### 2. 擬似 3D 投影
+
+2D キャンバス上で立体感を出すため、グリッド座標を斜め上から見下ろすように変換します。各頂点の高さ（ノイズ値）が Y 座標のオフセットになるため、高い部分が上に突き出して見えます。
+
+```js
+const px = offsetX + (col - cols/2) * scaleX * tiltX;
+const py = offsetY + (row - rows/2) * scaleY * tiltY - h;
+```
+
+### 3. ワイヤーフレーム描画
+
+各頂点から右方向と下方向の隣接頂点へ線を引くことで、格子状のワイヤーフレームを構成します。
+
+```js
+// 右方向
+line(pt.x, pt.y, ptRight.x, ptRight.y);
+// 下方向
+line(pt.x, pt.y, ptDown.x, ptDown.y);
+```
+
+### 4. 高さに応じた色分け
+
+ノイズ値（高さ）を HSB の色相にマッピングします。低い部分は青系、高い部分は赤〜マゼンタ系になり、波の形状が色で直感的にわかります。
+
+```js
+const hue = map(h, -20, maxH, 200, 360);
+const brightness = map(h, -20, maxH, 40, 95);
+stroke(hue, 70, brightness);
+```
+
+### 5. マウスインタラクション
+
+マウス位置からの距離に応じてガウス関数で影響度を計算し、近い頂点ほど高さを追加します。クリック時は波紋（sin 波）が時間とともに広がり減衰します。
+
+```js
+// マウス周辺の盛り上がり
+const influence = exp(-dist² / radius);
+h += influence * strength;
+
+// クリック波紋
+const wave = sin(dist * freq - age * speed) * (1 - age);
+```
+
+## 試してみよう
+
+- マウスをゆっくり動かして、メッシュがどう反応するか観察してみましょう
+- 素早くクリックを繰り返すと、複数の波紋が干渉して複雑な模様になります
+- ノイズの `scale` を変えると、波の細かさが変わります
+- グリッドの解像度（`cols` / `rows`）を増やすと、より滑らかなメッシュになります
+
+</div>
