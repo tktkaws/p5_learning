@@ -84,7 +84,7 @@
 
 | # | タイトル | 解説 |
 |---|---------|------|
-| 42 | WEBGL入門 | createCanvas(w,h,WEBGL)で3D空間。box/sphereの描画とカメラ操作 |
+| 42 | ✅ WEBGL入門 | createCanvas(w,h,WEBGL)で3D空間。box/sphereの描画とカメラ操作 |
 | 43 | 3D地形 | ノイズで生成した高さマップを三角メッシュで立体表示。orbitControl対応 |
 | 44 | パーティクル銀河 | 大量の粒子を3D空間で螺旋状に配置。回転する銀河のビジュアライゼーション |
 
