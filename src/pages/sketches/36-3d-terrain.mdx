@@ -1,0 +1,113 @@
+---
+layout: ../../layouts/Layout.astro
+title: "3D地形"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="3d-terrain" />
+
+<div class="article-content">
+
+## 3D地形
+
+2D Perlin ノイズで高さマップを生成し、三角メッシュで立体的な地形を描画します。WEBGL モードの `beginShape(TRIANGLE_STRIP)` を使った本格的な 3D メッシュ描画を学びます。
+
+### 操作方法
+
+| 操作 | 動作 |
+|------|------|
+| ドラッグ | カメラを回転 |
+| スクロール | ズームイン / アウト |
+
+地形はノイズのオフセットが時間で変化し、自動的にうねるようにアニメーションします。
+
+## 高さマップの生成
+
+2D Perlin ノイズ `noise(x, y)` でグリッドの各頂点に高さを割り当てます。
+
+```js
+const terrain = [];
+let yoff = flying;
+for (let y = 0; y <= rows; y++) {
+  terrain[y] = [];
+  let xoff = 0;
+  for (let x = 0; x <= cols; x++) {
+    terrain[y][x] = p.map(p.noise(xoff, yoff), 0, 1, -1, 1);
+    xoff += 0.12;
+  }
+  yoff += 0.12;
+}
+```
+
+`noise()` の入力間隔（ここでは `0.12`）が地形の「滑らかさ」を決めます。小さいほど滑らか、大きいほど荒い地形になります。
+
+## 三角メッシュ（TRIANGLE_STRIP）
+
+`beginShape(TRIANGLE_STRIP)` は、頂点を交互に並べて三角形の帯を効率的に描画します。
+
+```js
+p.beginShape(p.TRIANGLE_STRIP);
+for (let x = 0; x <= cols; x++) {
+  p.vertex(x * scl, y * scl, h1 * heightScale);
+  p.vertex(x * scl, (y + 1) * scl, h2 * heightScale);
+}
+p.endShape();
+```
+
+行ごとに「上の行」と「下の行」の頂点をジグザグに指定することで、グリッド全体が三角形で覆われます。
+
+## 高度による色分け
+
+高さの値に応じて地形の色を段階的に変えることで、リアルな見た目を実現します。
+
+| 高度範囲 | 地形 | 色 |
+|----------|------|-----|
+| 最低 | 深海 | 暗い青 |
+| 低 | 浅瀬 | 明るい青 |
+| やや低 | 砂浜 | 黄色 |
+| 中間 | 草原 | 緑 |
+| 高 | 山 | 茶色 |
+| 最高 | 雪山 | 白 |
+
+```js
+function terrainColor(h) {
+  if (h < -0.25) return p.color(210, 70, 40);  // 深海
+  if (h < 0.0)   return p.color(200, 60, 60);  // 浅瀬
+  if (h < 0.2)   return p.color(50, 40, 80);   // 砂浜
+  if (h < 0.5)   return p.color(120, 55, 55);  // 草原
+  if (h < 0.75)  return p.color(30, 50, 45);   // 山
+  return p.color(0, 5, 95);                     // 雪
+}
+```
+
+## ワイヤーフレームの重ね描き
+
+塗りのメッシュの上に半透明のワイヤーフレームを重ねることで、三角メッシュの構造が視覚的に分かりやすくなります。
+
+```js
+// 塗り面を描いた後、同じ頂点でワイヤーフレームを重ねる
+p.stroke(0, 0, 100, 0.08);
+p.strokeWeight(0.5);
+p.noFill();
+p.beginShape(p.TRIANGLE_STRIP);
+// ... 同じ頂点データ
+p.endShape();
+```
+
+## アニメーション
+
+ノイズの Y オフセット `flying` をフレームごとに少しずつ変化させることで、地形が「流れる」ようなアニメーションを実現します。
+
+```js
+flying -= 0.008;
+```
+
+## 試してみよう
+
+- ドラッグで色々な角度から地形を眺めてみましょう
+- ズームインして三角メッシュの構造を観察しましょう
+- `noise()` の入力間隔（`0.12`）を変えると地形の粗さが変わります
+- `heightScale` を変えると山の高さが変わります
+
+</div>

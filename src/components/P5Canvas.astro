@@ -36,6 +36,9 @@ const { sketch } = Astro.props;
 <script>
   import p5 from "p5";
 
+  // p5 インスタンスをスケッチ名で保持（WEBGL の saveCanvas 用）
+  const instances = new Map<string, p5>();
+
   document.querySelectorAll<HTMLDivElement>(".p5-mount").forEach(async (el) => {
     const name = el.dataset.sketch;
     if (!name) return;
@@ -53,20 +56,20 @@ const { sketch } = Astro.props;
     }
 
     const mod = await loader();
-    new p5(mod.default, el);
+    const inst = new p5(mod.default, el);
+    instances.set(name, inst);
   });
 
   document.querySelectorAll<HTMLButtonElement>(".capture-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const name = btn.dataset.sketch;
-      const wrapper = btn.previousElementSibling;
-      const canvas = wrapper?.querySelector("canvas");
-      if (!canvas || !name) return;
+      if (!name) return;
 
-      const a = document.createElement("a");
-      a.href = canvas.toDataURL("image/png");
-      a.download = `${name}.png`;
-      a.click();
+      const inst = instances.get(name);
+      if (inst) {
+        // p5.saveCanvas は WEBGL でもバッファを正しく取得する
+        inst.saveCanvas(name, "png");
+      }
     });
   });
 </script>
