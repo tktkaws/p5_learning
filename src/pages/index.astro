@@ -300,12 +300,33 @@ const sketches = [
 </Layout>
 
 <style>
+  /* index ページのみ幅を拡張 */
+  :global(.page-container:has(.sketch-grid)) {
+    max-width: 1920px;
+  }
+  :global(.site-nav-inner:has(+ .page-container .sketch-grid)),
+  :global(body:has(.sketch-grid) .site-nav-inner) {
+    max-width: 1920px;
+  }
+
   .sketch-grid {
     list-style: none;
     padding: 0;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
+  }
+
+  @media (min-width: 1440px) {
+    .sketch-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .sketch-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   .sketch-grid a {
@@ -328,8 +349,8 @@ const sketches = [
   }
 
   .sketch-thumbnail {
-    width: 200px;
-    height: 200px;
+    width: 120px;
+    height: 120px;
     flex-shrink: 0;
     background: #f0f0f0;
     border-radius: 8px;
