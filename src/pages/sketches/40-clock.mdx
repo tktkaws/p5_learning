@@ -1,0 +1,81 @@
+---
+layout: ../../layouts/Layout.astro
+title: "時計"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="clock" />
+
+<div class="article-content">
+
+## 時計
+
+`p.hour()`・`p.minute()`・`p.second()` でリアルタイムの時刻を取得し、三角関数で針の角度に変換するアナログ時計です。座標変換（translate）と角度計算の実践的な応用例になっています。
+
+### 時刻から角度への変換
+
+時計の針は「12時方向が上」で時計回りに回転します。p5.js の角度は右方向が 0 なので、`-HALF_PI`（上方向）を基準にします。
+
+```js
+// 秒針: 0〜60秒 → 0〜TWO_PI に変換し、上方向にオフセット
+const secAngle = (smoothSec / 60) * p.TWO_PI - p.HALF_PI;
+```
+
+| 針 | 1周の単位 | 角度の計算 |
+|----|----------|-----------|
+| 時針 | 12時間 | `(hour / 12) * TWO_PI` |
+| 分針 | 60分 | `(minute / 60) * TWO_PI` |
+| 秒針 | 60秒 | `(second / 60) * TWO_PI` |
+
+### 滑らかな動き
+
+`p.second()` だけだと秒針が 1 秒ごとにカクカク動きます。`p.millis()` で補間することで滑らかに回転させています。
+
+```js
+const smoothSec = sc + ms / 1000;        // 秒 + ミリ秒の端数
+const smoothMin = mn + smoothSec / 60;    // 分 + 秒の端数
+const smoothHr  = hr + smoothMin / 60;    // 時 + 分の端数
+```
+
+この連鎖により、時針も分針もわずかずつ動き続けます。
+
+### 目盛りの描画
+
+60 本の目盛りをループで描画し、`i % 5 === 0` で時間の位置（12 本）を判別して太く長くしています。
+
+```js
+for (let i = 0; i < 60; i++) {
+  const angle = p.map(i, 0, 60, 0, p.TWO_PI) - p.HALF_PI;
+  const isHour = i % 5 === 0;
+  const innerR = isHour ? RADIUS - 15 : RADIUS - 7;
+  // ...
+}
+```
+
+### 針の描画
+
+各針は原点から角度方向に `cos`・`sin` で求めた座標へ線を引くだけです。
+
+```js
+function drawHand(angle, length, weight, col) {
+  p.line(0, 0, p.cos(angle) * length, p.sin(angle) * length);
+}
+```
+
+太さと長さで時針・分針・秒針を区別しています。
+
+| 針 | 長さ | 太さ | 色 |
+|----|------|------|-----|
+| 時針 | 半径の 50% | 6px | 黒 |
+| 分針 | 半径の 72% | 4px | 黒 |
+| 秒針 | 半径の 85% | 1.5px | 赤 |
+
+### 試してみよう
+
+- `RADIUS` を変えて時計のサイズを調整してみましょう
+- 秒針の補間を外して `p.second()` だけにすると、カクカクした動きとの違いがわかります
+- 数字（1〜12）を目盛りの代わりに表示してみましょう
+- 背景色や針の色を変えて、自分好みのデザインにカスタマイズしてみましょう
+
+</div>
