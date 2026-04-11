@@ -1,0 +1,85 @@
+---
+layout: ../../layouts/Layout.astro
+title: "音声ビジュアライザ"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="audio-visualizer" />
+
+<div class="article-content">
+
+## 音声ビジュアライザ
+
+マイク入力を **Web Audio API** でリアルタイムに FFT（高速フーリエ変換）解析し、周波数スペクトラムをバーグラフで描画します。キャンバスをクリックするとマイクが起動します。
+
+### Web Audio API の基本構成
+
+ブラウザ内蔵の音声処理エンジンを使い、次の流れで音声データを取得します。
+
+```
+マイク → MediaStream → AudioContext → AnalyserNode → FFT データ
+```
+
+```js
+const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+const audioCtx = new AudioContext();
+const analyser = audioCtx.createAnalyser();
+
+const source = audioCtx.createMediaStreamSource(stream);
+source.connect(analyser);
+```
+
+### FFT 解析とは
+
+FFT は音声信号を **時間領域** から **周波数領域** に変換する処理です。結果として「どの周波数がどれくらいの強さで鳴っているか」がわかります。
+
+| パラメータ | 値 | 説明 |
+|-----------|-----|------|
+| `fftSize` | 512 | 解析の精度。大きいほど細かい周波数分解能（2 の累乗） |
+| `frequencyBinCount` | 256 | fftSize の半分。得られるデータ点の数 |
+| `smoothingTimeConstant` | 0.8 | 0〜1。大きいほど変化が滑らか |
+
+### スペクトラムバーの描画
+
+`getByteFrequencyData()` で 0〜255 の整数配列を取得し、各バーの高さにマッピングします。
+
+```js
+analyser.getByteFrequencyData(dataArray);
+
+for (let i = 0; i < barCount; i++) {
+  const value = dataArray[i * binStep];
+  const barH = p.map(value, 0, 255, 2, H * 0.85);
+  p.rect(x, H - barH, barW - 1, barH);
+}
+```
+
+### HSB カラーで周波数を色分け
+
+低い周波数を青系、高い周波数を赤系にすることで、視覚的に周波数帯域を区別できます。
+
+```js
+p.colorMode(p.HSB, 360, 100, 100);
+const hue = p.map(i, 0, barCount, 200, 360);       // 青 → 赤
+const brightness = p.map(value, 0, 255, 30, 100);   // 音量で明るさ変化
+p.fill(hue % 360, 80, brightness);
+```
+
+### ユーザー操作で開始する理由
+
+ブラウザのセキュリティポリシーにより、`AudioContext` の作成や `getUserMedia` はユーザーのジェスチャー（クリック等）が必要です。自動再生やバックグラウンドでの音声取得はブロックされます。
+
+```js
+p.mousePressed = () => {
+  startAudio();  // クリックイベント内で AudioContext を作成
+};
+```
+
+### 試してみよう
+
+- `fftSize` を `1024` や `2048` に変えて、バーの細かさの違いを観察してみましょう
+- `smoothingTimeConstant` を `0` にすると、生のスペクトルデータの動きがわかります
+- バーの代わりに `p.line()` や `p.ellipse()` で円形スペクトラムを描いてみましょう
+- `getByteTimeDomainData()` に切り替えると波形表示になります
+
+</div>
