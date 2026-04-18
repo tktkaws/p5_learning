@@ -1,0 +1,82 @@
+---
+layout: ../../layouts/Layout.astro
+title: "ドラムマシン"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="drum-machine" />
+
+<div class="article-content">
+
+## ドラムマシン
+
+グリッド UI でビートパターンを組み、**Web Audio API** のオシレータとノイズで音を鳴らすステップシーケンサです。セルをクリックしてパターンを編集し、Play ボタン（またはスペースキー）で再生できます。
+
+### ステップシーケンサの仕組み
+
+16 ステップ（＝16 分音符）を 1 小節として、4 トラック分のオン/オフを管理します。再生中は一定間隔でステップを進め、オンのセルがあるトラックの音を鳴らします。
+
+```
+ステップ間隔 = 60000ms ÷ BPM ÷ 4
+```
+
+BPM=120 のとき、16 分音符 1 つは **125ms** です。`p.millis()` で経過時間を計測し、間隔を超えたら次のステップに進みます。
+
+```js
+if (playing) {
+  const interval = 60000 / bpm / 4;
+  const now = p.millis();
+  if (now - lastStepTime >= interval) {
+    currentStep = (currentStep + 1) % 16;
+    lastStepTime = now;
+    triggerStep(currentStep);
+  }
+}
+```
+
+### Web Audio API によるドラム音の合成
+
+外部の音声ファイルを使わず、`OscillatorNode` とノイズバッファだけで 4 種類のドラム音を合成しています。
+
+| 音色 | 構成 | ポイント |
+|------|------|---------|
+| **Kick** | サイン波オシレータ | 周波数を 150Hz→40Hz へ急速にスイープ（ピッチエンベロープ） |
+| **Snare** | ハイパスノイズ + トライアングル波 | ノイズのザラつき＋低めのトーンを混ぜてスネアらしさを再現 |
+| **HiHat** | ハイパスノイズ（6kHz〜） | 超短いディケイ（0.06 秒）で金属的なアタック感 |
+| **Clap** | バンドパスノイズ（2.5kHz） | 中域に絞ったノイズで手拍子風の音色 |
+
+### キックのピッチエンベロープ
+
+キックドラムの「ドスッ」という感じは、**瞬間的に高い周波数から低い周波数に下がる**ことで生まれます。
+
+```js
+const osc = audioCtx.createOscillator();
+osc.type = "sine";
+osc.frequency.setValueAtTime(150, now);           // 開始: 150Hz
+osc.frequency.exponentialRampToValueAtTime(40, now + 0.12); // 0.12秒で40Hzへ
+```
+
+### ノイズバッファの生成
+
+スネア・ハイハット・クラップにはホワイトノイズを使います。ランダムな値で満たした `AudioBuffer` を事前に 1 つ作り、各音で使い回します。
+
+```js
+const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate, audioCtx.sampleRate);
+const data = buffer.getChannelData(0);
+for (let i = 0; i < data.length; i++) {
+  data[i] = Math.random() * 2 - 1;  // -1〜1 のランダム値
+}
+```
+
+フィルタ（`BiquadFilterNode`）で周波数帯域を絞ることで、同じノイズから異なる音色を作り分けています。
+
+### 試してみよう
+
+- セルをクリックしてオリジナルのビートパターンを作ってみましょう
+- BPM スライダーでテンポを変えると雰囲気が大きく変わります
+- キックの開始周波数（150）を 200 や 100 に変えて音の違いを聴き比べてみましょう
+- ハイハットのディケイ時間（0.06 秒）を長くするとオープンハイハット風になります
+- スネアのノイズとトーンの音量比を変えると、ブラシスネアや電子スネアに近づきます
+
+</div>
