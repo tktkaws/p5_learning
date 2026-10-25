@@ -1,0 +1,105 @@
+---
+layout: ../../layouts/Layout.astro
+title: "流体シミュレーション"
+---
+
+import P5Canvas from "../../components/P5Canvas.astro";
+
+<P5Canvas sketch="fluid-simulation" />
+
+<div class="article-content">
+
+## 流体シミュレーション
+
+1 次元の波動方程式で水面をシミュレートしています。**クリックやドラッグで波を起こす**ことができます。波は左右に伝搬し、端で反射します。
+
+## 波動方程式
+
+水面の各点の高さを配列で管理し、隣の点との関係で次のフレームの高さを計算します。
+
+```
+next[i] = (left + right) × speed
+         - previous[i]
+         + current[i] × (2 - 2 × speed)
+```
+
+- `current[i]` — 現在の高さ
+- `previous[i]` — 1 フレーム前の高さ
+- `left`, `right` — 左右の隣の高さ
+- `speed` — 波の伝搬速度
+
+```js
+const left = i > 0 ? current[i - 1] : current[i];
+const right = i < resolution - 1 ? current[i + 1] : current[i];
+next[i] = (left + right) * speed
+        - previous[i]
+        + current[i] * (2 - 2 * speed);
+next[i] *= dampingFactor;
+```
+
+## 3 つの配列を使った時間ステップ
+
+波動方程式には「2 フレーム分の履歴」が必要です。
+
+```js
+// 毎フレーム
+previous = current;
+current = next;
+```
+
+`previous`（過去）と `current`（現在）から `next`（未来）を計算し、ローテーションします。
+
+## 減衰
+
+現実の水面は摩擦やエネルギー散逸で徐々に穏やかになります。
+
+```js
+next[i] *= dampingFactor; // 0.99 など
+```
+
+1.0 に近いほどゆっくり減衰し、波が長く続きます。
+
+## 波の発生（外力）
+
+マウスの位置に対応する配列要素の高さを直接変えることで、波を発生させます。
+
+```js
+function disturb(mx, strength) {
+  const idx = floor(map(mx, 0, width, 0, resolution));
+  const radius = 5;
+  for (let i = -radius; i <= radius; i++) {
+    const ti = idx + i;
+    if (ti >= 0 && ti < resolution) {
+      const factor = 1 - abs(i) / (radius + 1);
+      current[ti] += strength * factor;
+    }
+  }
+}
+```
+
+半径内の点を滑らかに押し下げることで、自然な波紋を作ります。
+
+## 水面の描画
+
+高さ配列をもとに `beginShape()` で水面の曲線を描きます。
+
+```js
+beginShape();
+vertex(0, height); // 左下
+for (let i = 0; i < resolution; i++) {
+  vertex(i * cellW, baseY + current[i]);
+}
+vertex(width, height); // 右下
+endShape(CLOSE);
+```
+
+水面のハイライト線を重ねることで、光の反射を表現しています。
+
+## 試してみよう
+
+- `speed` を大きくすると波が速く伝わります（0.5 が安定値）
+- `dampingFactor` を 1.0 にすると永遠に波が消えません
+- `resolution` を増やすときめ細かい水面になります
+- 素早くドラッグすると連続的な波が生まれます
+
+</div>
